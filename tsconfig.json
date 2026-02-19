@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["node", "vitest/globals"],
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "isolatedModules": true
+  },
+  "include": ["src", "tests", "vitest.config.ts"]
+}
