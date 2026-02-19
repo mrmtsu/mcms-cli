@@ -9,7 +9,7 @@ AI/CI friendly CLI for microCMS with stable `--json` output and deterministic ex
 ## Naming
 
 - GitHub repository name: `mcms-cli`
-- npm package name: `@yusuke/mcms-cli`
+- npm package name: `@mrmtsu/mcms-cli`
 - command you run: `microcms`
 - local storage identifier (config dir / keychain service): `mcms-cli`
 
@@ -19,9 +19,9 @@ This project is unofficial, and that is explicitly stated in this README.
 ## Install
 
 ```bash
-npm i -g @yusuke/mcms-cli
+npm i -g @mrmtsu/mcms-cli
 # or
-npx @yusuke/mcms-cli --help
+npx @mrmtsu/mcms-cli --help
 ```
 
 ## Auth

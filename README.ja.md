@@ -9,7 +9,7 @@
 ## 命名の整理
 
 - GitHub リポジトリ名: `mcms-cli`
-- npm パッケージ名: `@yusuke/mcms-cli`
+- npm パッケージ名: `@mrmtsu/mcms-cli`
 - 実際に実行するコマンド名: `microcms`
 - ローカル保存時の識別子（configディレクトリ / keychain service）: `mcms-cli`
 
@@ -19,9 +19,9 @@
 ## インストール
 
 ```bash
-npm i -g @yusuke/mcms-cli
+npm i -g @mrmtsu/mcms-cli
 # or
-npx @yusuke/mcms-cli --help
+npx @mrmtsu/mcms-cli --help
 ```
 
 ## 認証

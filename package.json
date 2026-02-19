@@ -1,5 +1,5 @@
 {
-  "name": "@yusuke/mcms-cli",
+  "name": "@mrmtsu/mcms-cli",
   "version": "0.1.0",
   "description": "AI/CI friendly CLI for microCMS",
   "license": "MIT",

@@ -30,4 +30,4 @@ No user-facing changes yet.
 - Ensured `--json` error envelopes and exit codes stay stable on invalid env/config input paths.
 - `auth login --profile` no longer changes `defaultProfile` implicitly.
 - Invalid local config JSON now fails fast instead of being overwritten silently.
-- Documentation/install examples aligned with package name (`@yusuke/mcms-cli`) and command naming.
+- Documentation/install examples aligned with package name (`@mrmtsu/mcms-cli`) and command naming.
