@@ -1,6 +1,6 @@
 {
   "name": "@mrmtsu/mcms-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AI/CI friendly CLI for microCMS",
   "license": "MIT",
   "type": "module",
