@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createRequire } from "node:module";
-import { dirname, resolve } from "node:path";
+import { dirname, extname, resolve } from "node:path";
 import { CliError } from "../errors.js";
 import { EXIT_CODE } from "../exit-codes.js";
 import type { DocsGetResult, DocsListResult, DocsProvider } from "./provider.js";
@@ -318,6 +318,14 @@ function createMcpClient(runtime: McpRuntime): McpClient {
 function resolveMcpRuntime(): McpRuntime {
   const overridden = MCP_COMMAND_OVERRIDE?.trim();
   if (overridden && overridden.length > 0) {
+    const extension = extname(overridden).toLowerCase();
+    if (extension === ".js" || extension === ".mjs" || extension === ".cjs") {
+      return {
+        command: process.execPath,
+        args: [overridden]
+      };
+    }
+
     return {
       command: overridden,
       args: []
