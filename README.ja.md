@@ -73,6 +73,10 @@ microcms content delete <endpoint> <id> --json
 microcms media upload <path> --json
 microcms media upload <path> --dry-run --json
 microcms validate <endpoint> --file payload.json --json
+microcms docs list --source auto --json
+microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
+microcms search "content list" --scope all --json
+microcms spec --json
 
 microcms schema pull --out microcms-schema.json --json
 microcms types generate --schema microcms-schema.json --out microcms-types.d.ts --json
@@ -169,6 +173,9 @@ npm run build
 - `MICROCMS_CONTENT_API_BASE_URL` で上書き可能です（主にテスト用途）。
 - ネットワーク不要の contract テストでは `MICROCMS_CONTENT_MOCK_FILE` を使えます。
 - `MICROCMS_*_BASE_URL` の override 先は localhost または microcms ドメインのみ許可します。
+- ドキュメント系コマンドは、同梱された `microcms-document-mcp-server` を既定で利用します（追加セットアップ不要）。
+- `docs` / `search` / `spec` は `MICROCMS_API_KEY` や `MICROCMS_SERVICE_DOMAIN` なしで実行できます。
+- 必要に応じて `MICROCMS_DOC_MCP_COMMAND` で実行コマンドを上書きできます。
 
 ## 免責事項
 

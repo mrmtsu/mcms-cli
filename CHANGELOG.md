@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No user-facing changes yet.
+### Added
+- `docs list` command for official documentation metadata lookup.
+- `docs get` command for official documentation markdown retrieval (MCP source).
+- `search` command to query CLI spec/docs references in one place.
+- `spec` command for machine-readable CLI capability output.
+- docs source strategy (`--source auto|mcp|local`) with auto fallback warnings.
+- bundled `microcms-document-mcp-server` dependency so docs/search work without separate user setup.
+- docs MCP transport handling updated to support newline JSON transport used by current MCP SDK servers.
+- `docs` / `search` / `spec` can run without API key/service domain configuration.
 
 ## [0.1.0] - 2026-02-19
 

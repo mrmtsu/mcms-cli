@@ -6,8 +6,11 @@ import { registerAuthCommands } from "./commands/auth.js";
 import { registerCompletionCommands } from "./commands/completion.js";
 import { registerConfigCommands } from "./commands/config.js";
 import { registerContentCommands } from "./commands/content.js";
+import { registerDocsCommands } from "./commands/docs.js";
 import { registerMediaCommands } from "./commands/media.js";
+import { registerSearchCommand } from "./commands/search.js";
 import { registerSchemaCommands } from "./commands/schema.js";
+import { registerSpecCommand } from "./commands/spec.js";
 import { registerTypesCommands } from "./commands/types.js";
 import { registerValidateCommand } from "./commands/validate.js";
 import type { RuntimeContext } from "./core/context.js";
@@ -76,8 +79,11 @@ async function main(argv: string[]): Promise<void> {
   registerConfigCommands(program);
   registerCompletionCommands(program);
   registerContentCommands(program);
+  registerDocsCommands(program);
   registerMediaCommands(program);
+  registerSearchCommand(program);
   registerSchemaCommands(program);
+  registerSpecCommand(program);
   registerTypesCommands(program);
   registerValidateCommand(program);
 

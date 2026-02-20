@@ -253,7 +253,7 @@ _microcms_complete() {
   command="\${COMP_WORDS[1]}"
   subcmd="\${COMP_WORDS[2]}"
 
-  local roots="api auth config completion content media schema types validate help"
+  local roots="api auth config completion content docs media schema search spec types validate help"
   local globals="${globals}"
 
   if [[ \${COMP_CWORD} -eq 1 ]]; then
@@ -279,6 +279,9 @@ _microcms_complete() {
         COMPREPLY=( $(compgen -W "list get create update delete" -- "$cur") )
       fi
       ;;
+    docs)
+      COMPREPLY=( $(compgen -W "list get" -- "$cur") )
+      ;;
     media)
       COMPREPLY=( $(compgen -W "upload" -- "$cur") )
       ;;
@@ -300,6 +303,12 @@ _microcms_complete() {
       else
         COMPREPLY=( $(compgen -W "--file" -- "$cur") )
       fi
+      ;;
+    search)
+      COMPREPLY=( $(compgen -W "--scope --source --category --limit" -- "$cur") )
+      ;;
+    spec)
+      COMPREPLY=( $(compgen -W "$globals" -- "$cur") )
       ;;
     *)
       COMPREPLY=( $(compgen -W "$globals" -- "$cur") )
@@ -326,7 +335,7 @@ _microcms_endpoints() {
 
 _microcms() {
   local -a roots
-  roots=(api auth config completion content media schema types validate)
+  roots=(api auth config completion content docs media schema search spec types validate)
   _arguments '*::arg:->args'
 
   case $state in
@@ -364,6 +373,9 @@ _microcms() {
         content)
           _values 'content command' list get create update delete
           ;;
+        docs)
+          _values 'docs command' list get
+          ;;
         media)
           _values 'media command' upload
           ;;
@@ -378,6 +390,12 @@ _microcms() {
           ;;
         completion)
           _values 'completion command' install uninstall bash zsh fish
+          ;;
+        search)
+          _values 'search option' --scope --source --category --limit
+          ;;
+        spec)
+          _values 'global option' ${globals}
           ;;
         validate)
           _values 'option' --file
@@ -398,11 +416,12 @@ function buildFishCompletionScript(): string {
   return `# microcms completion for fish
 complete -c microcms -f
 
-complete -c microcms -n '__fish_use_subcommand' -a 'api auth config completion content media schema types validate'
+complete -c microcms -n '__fish_use_subcommand' -a 'api auth config completion content docs media schema search spec types validate'
 
 complete -c microcms -n '__fish_seen_subcommand_from auth' -a 'login status profile'
 complete -c microcms -n '__fish_seen_subcommand_from api' -a 'list info'
 complete -c microcms -n '__fish_seen_subcommand_from content' -a 'list get create update delete'
+complete -c microcms -n '__fish_seen_subcommand_from docs' -a 'list get'
 complete -c microcms -n '__fish_seen_subcommand_from media' -a 'upload'
 complete -c microcms -n '__fish_seen_subcommand_from config' -a 'doctor'
 complete -c microcms -n '__fish_seen_subcommand_from schema' -a 'pull'

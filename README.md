@@ -73,6 +73,10 @@ microcms content delete <endpoint> <id> --json
 microcms media upload <path> --json
 microcms media upload <path> --dry-run --json
 microcms validate <endpoint> --file payload.json --json
+microcms docs list --source auto --json
+microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
+microcms search "content list" --scope all --json
+microcms spec --json
 
 microcms schema pull --out microcms-schema.json --json
 microcms types generate --schema microcms-schema.json --out microcms-types.d.ts --json
@@ -169,6 +173,9 @@ npm run build
 - You can override content API base URL with `MICROCMS_CONTENT_API_BASE_URL` (primarily for tests).
 - For contract tests without network, use `MICROCMS_CONTENT_MOCK_FILE` to run content CRUD against a local JSON fixture store.
 - `MICROCMS_*_BASE_URL` overrides only allow localhost or microcms domains.
+- Documentation commands use bundled `microcms-document-mcp-server` by default (no extra user setup required).
+- `docs`, `search`, and `spec` do not require `MICROCMS_API_KEY` / `MICROCMS_SERVICE_DOMAIN`.
+- You can override the MCP executable path with `MICROCMS_DOC_MCP_COMMAND` when needed.
 
 ## Disclaimer
 
@@ -182,4 +189,3 @@ npm run build
 - [Contributing](./CONTRIBUTING.md)
 - [Security](./SECURITY.md)
 - [Changelog](./CHANGELOG.md)
-# mcms-cli
