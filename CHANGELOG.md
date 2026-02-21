@@ -16,6 +16,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Enforced LF normalization via `.gitattributes` to avoid cross-platform formatting check failures.
 
+## [0.2.1] - 2026-02-20
+
+### Fixed
+- Fixed docs MCP command override on Windows by running JavaScript MCP commands via `node`.
+
+## [0.2.0] - 2026-02-20
+
+### Added
+- `docs list` command for official documentation metadata lookup.
+- `docs get` command for official documentation markdown retrieval (MCP source).
+- `search` command to query CLI spec/docs references in one place.
+- `spec` command for machine-readable CLI capability output.
+- Documentation commands now support source selection via `--source auto|mcp|local` with automatic fallback warnings.
+- Bundled `microcms-document-mcp-server` so docs/search work without separate setup.
+- `docs` / `search` / `spec` can run without API key/service domain configuration.
+
+### Fixed
+- Improved MCP transport compatibility for docs/search/spec on servers using newline-delimited JSON messages.
+
 ## [0.1.0] - 2026-02-19
 
 ### Added
