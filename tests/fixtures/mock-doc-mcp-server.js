@@ -2,7 +2,7 @@
 
 const docsByCategory = {
   "content-api": ["コンテンツ一覧取得API.md", "コンテンツ詳細取得API.md"],
-  manual: ["はじめに.md"]
+  manual: ["はじめに.md"],
 };
 
 const docsBody = {
@@ -10,7 +10,8 @@ const docsBody = {
     "---\ncontentId: get-list-contents\ndirectory: content-api\n---\n\n# GET /api/v1/{endpoint}\n\nList endpoint docs body.",
   "content-api/コンテンツ詳細取得API.md":
     "---\ncontentId: get-content\ndirectory: content-api\n---\n\n# GET /api/v1/{endpoint}/{content_id}\n\nDetail endpoint docs body.",
-  "manual/はじめに.md": "---\ncontentId: introduction\ndirectory: manual\n---\n\n# はじめに\n\nManual introduction."
+  "manual/はじめに.md":
+    "---\ncontentId: introduction\ndirectory: manual\n---\n\n# はじめに\n\nManual introduction.",
 };
 
 let buffer = Buffer.alloc(0);
@@ -107,7 +108,7 @@ function respond(id, result) {
   send({
     jsonrpc: "2.0",
     id,
-    result
+    result,
   });
 }
 
@@ -116,14 +117,14 @@ function error(id, message) {
     jsonrpc: "2.0",
     id,
     error: {
-      message
-    }
+      message,
+    },
   });
 }
 
 function toolText(id, text) {
   respond(id, {
-    content: [{ type: "text", text }]
+    content: [{ type: "text", text }],
   });
 }
 
@@ -146,12 +147,12 @@ function handleMessage(message) {
     respond(id, {
       protocolVersion: "2024-11-05",
       capabilities: {
-        tools: {}
+        tools: {},
       },
       serverInfo: {
         name: "mock-doc-mcp",
-        version: "1.0.0"
-      }
+        version: "1.0.0",
+      },
     });
     return;
   }
@@ -181,11 +182,11 @@ function handleMessage(message) {
       JSON.stringify(
         {
           categories,
-          totalFiles: categories.reduce((sum, row) => sum + row.files.length, 0)
+          totalFiles: categories.reduce((sum, row) => sum + row.files.length, 0),
         },
         null,
-        2
-      )
+        2,
+      ),
     );
     return;
   }

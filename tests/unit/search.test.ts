@@ -10,7 +10,7 @@ describe("search ranking", () => {
         ref: "content list",
         snippet: "list content",
         score: 0,
-        source: "local"
+        source: "local",
       },
       {
         kind: "doc",
@@ -20,7 +20,7 @@ describe("search ranking", () => {
         score: 0,
         source: "mcp",
         category: "content-api",
-        filename: "コンテンツ一覧取得API.md"
+        filename: "コンテンツ一覧取得API.md",
       },
       {
         kind: "command",
@@ -28,8 +28,8 @@ describe("search ranking", () => {
         ref: "spec",
         snippet: "output machine-readable CLI spec",
         score: 0,
-        source: "local"
-      }
+        source: "local",
+      },
     ];
 
     const ranked = rankSearchHits("content", hits, 2);

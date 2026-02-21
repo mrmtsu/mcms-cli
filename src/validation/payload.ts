@@ -29,7 +29,7 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
     return {
       valid: false,
       errors: parsed.error.issues.map((issue) => issue.message),
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -39,11 +39,16 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
   const fields = extractFields(apiSchema);
   const knownFields = new Map(
     fields
-      .filter((field): field is ApiField & { fieldId: string } => typeof field.fieldId === "string" && field.fieldId.length > 0)
-      .map((field) => [field.fieldId, field])
+      .filter(
+        (field): field is ApiField & { fieldId: string } =>
+          typeof field.fieldId === "string" && field.fieldId.length > 0,
+      )
+      .map((field) => [field.fieldId, field]),
   );
 
-  const requiredFields = fields.filter((field) => field.required && field.fieldId).map((field) => field.fieldId as string);
+  const requiredFields = fields
+    .filter((field) => field.required && field.fieldId)
+    .map((field) => field.fieldId as string);
   for (const field of requiredFields) {
     if (!(field in parsed.data)) {
       errors.push(`Required field is missing: ${field}`);
@@ -77,7 +82,9 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
 
     if (typeof value === "string") {
       if (!allowedValues.has(value)) {
-        errors.push(`Field value out of range: ${key} must be one of [${[...allowedValues].join(", ")}]`);
+        errors.push(
+          `Field value out of range: ${key} must be one of [${[...allowedValues].join(", ")}]`,
+        );
       }
       continue;
     }
@@ -93,7 +100,7 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
@@ -190,7 +197,10 @@ function normalizeKind(value: unknown): string | null {
     return null;
   }
 
-  const normalized = value.trim().toLowerCase().replace(/[\s_-]/g, "");
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]/g, "");
   return normalized.length > 0 ? normalized : null;
 }
 
@@ -224,7 +234,8 @@ function extractAllowedValues(field: ApiField): Set<string> | null {
         }
 
         if (typeof item === "object" && item !== null) {
-          const value = (item as { value?: unknown; id?: unknown }).value ?? (item as { id?: unknown }).id;
+          const value =
+            (item as { value?: unknown; id?: unknown }).value ?? (item as { id?: unknown }).id;
           return typeof value === "string" ? value : null;
         }
 
@@ -250,7 +261,9 @@ function extractFields(apiSchema: unknown): ApiField[] {
 
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) {
-      return candidate.filter((item): item is ApiField => typeof item === "object" && item !== null);
+      return candidate.filter(
+        (item): item is ApiField => typeof item === "object" && item !== null,
+      );
     }
   }
 

@@ -11,7 +11,7 @@ export async function readJsonFile(path: string): Promise<unknown> {
       code: "INVALID_INPUT",
       message: `Could not read file: ${path}`,
       exitCode: EXIT_CODE.INVALID_INPUT,
-      details: { path }
+      details: { path },
     });
   }
 
@@ -22,7 +22,7 @@ export async function readJsonFile(path: string): Promise<unknown> {
       code: "INVALID_INPUT",
       message: `Invalid JSON file: ${path}`,
       exitCode: EXIT_CODE.INVALID_INPUT,
-      details: { path }
+      details: { path },
     });
   }
 }
@@ -32,7 +32,7 @@ export function assertObjectPayload(payload: unknown): Record<string, unknown> {
     throw new CliError({
       code: "INVALID_INPUT",
       message: "Payload must be a JSON object",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 

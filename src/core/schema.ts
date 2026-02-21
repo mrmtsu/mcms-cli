@@ -46,7 +46,7 @@ export function buildSchemaBundle(params: {
     version: "0.x",
     pulledAt: new Date().toISOString(),
     serviceDomain: params.serviceDomain ?? null,
-    apis: params.apis
+    apis: params.apis,
   };
 }
 
@@ -122,7 +122,7 @@ export function generateTypesFromSchema(input: unknown): GeneratedTypesResult {
   return {
     code: lines.join("\n"),
     endpointCount: endpointMap.length,
-    warnings
+    warnings,
   };
 }
 
@@ -146,7 +146,7 @@ function normalizeSchemas(input: unknown): NormalizedApiSchema[] {
 
           return {
             endpoint,
-            api: item
+            api: item,
           };
         })
         .filter((item): item is NormalizedApiSchema => item !== null)
@@ -190,7 +190,7 @@ function tryExtractBundleSchemas(input: unknown): NormalizedApiSchema[] {
       const api = (item as { api?: unknown }).api ?? item;
       return {
         endpoint,
-        api
+        api,
       };
     })
     .filter((item): item is NormalizedApiSchema => item !== null);
@@ -222,7 +222,9 @@ function extractApiListItems(data: unknown): ApiListItem[] {
 
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) {
-      return candidate.filter((item): item is ApiListItem => typeof item === "object" && item !== null);
+      return candidate.filter(
+        (item): item is ApiListItem => typeof item === "object" && item !== null,
+      );
     }
   }
 
@@ -252,7 +254,9 @@ function extractApiFields(data: unknown): ApiField[] {
 
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) {
-      return candidate.filter((item): item is ApiField => typeof item === "object" && item !== null);
+      return candidate.filter(
+        (item): item is ApiField => typeof item === "object" && item !== null,
+      );
     }
   }
 
@@ -270,7 +274,8 @@ function inferTsType(field: ApiField): string {
     return union;
   }
 
-  const hint = normalizeKind(field.type) ?? normalizeKind(field.fieldType) ?? normalizeKind(field.inputType);
+  const hint =
+    normalizeKind(field.type) ?? normalizeKind(field.fieldType) ?? normalizeKind(field.inputType);
   const fromHint = mapKindToType(hint, field);
   if (fromHint) {
     return fromHint;
@@ -349,7 +354,8 @@ function extractAllowedValues(field: ApiField): string[] {
         }
 
         if (typeof item === "object" && item !== null) {
-          const value = (item as { value?: unknown; id?: unknown }).value ?? (item as { id?: unknown }).id;
+          const value =
+            (item as { value?: unknown; id?: unknown }).value ?? (item as { id?: unknown }).id;
           return normalizeString(value);
         }
 
@@ -387,7 +393,10 @@ function normalizeKind(value: unknown): string | null {
     return null;
   }
 
-  const normalized = value.trim().toLowerCase().replace(/[\s_-]/g, "");
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]/g, "");
   return normalized.length > 0 ? normalized : null;
 }
 

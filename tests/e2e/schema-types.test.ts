@@ -23,19 +23,27 @@ describe("schema/types commands", () => {
               api: {
                 apiFields: [
                   { fieldId: "title", required: true, kind: "text" },
-                  { fieldId: "views", kind: "number" }
-                ]
-              }
-            }
-          ]
+                  { fieldId: "views", kind: "number" },
+                ],
+              },
+            },
+          ],
         },
         null,
-        2
+        2,
       ),
-      "utf8"
+      "utf8",
     );
 
-    const result = runCli(["types", "generate", "--schema", schemaPath, "--out", outPath, "--json"]);
+    const result = runCli([
+      "types",
+      "generate",
+      "--schema",
+      schemaPath,
+      "--out",
+      outPath,
+      "--json",
+    ]);
     expect(result.code).toBe(0);
 
     const body = JSON.parse(result.stdout);

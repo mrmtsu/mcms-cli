@@ -10,20 +10,20 @@ describe("http retry", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response("{\"message\":\"rate\"}", {
+        new Response('{"message":"rate"}', {
           status: 429,
           headers: {
-            "retry-after": "0"
-          }
-        })
+            "retry-after": "0",
+          },
+        }),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ ok: true }), {
           status: 200,
           headers: {
-            "x-request-id": "rid-2"
-          }
-        })
+            "x-request-id": "rid-2",
+          },
+        }),
       );
 
     vi.stubGlobal("fetch", fetchMock);
@@ -34,7 +34,7 @@ describe("http retry", () => {
       timeoutMs: 1000,
       retry: 1,
       retryMaxDelayMs: 100,
-      method: "GET"
+      method: "GET",
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -56,17 +56,17 @@ describe("http retry", () => {
         timeoutMs: 1000,
         retry: 2,
         retryMaxDelayMs: 10,
-        method: "GET"
-      })
+        method: "GET",
+      }),
     ).rejects.toMatchObject({
       code: "NETWORK_ERROR",
       retryable: true,
       details: {
         retry: {
           retriesUsed: 2,
-          maxAttempts: 3
-        }
-      }
+          maxAttempts: 3,
+        },
+      },
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -74,9 +74,9 @@ describe("http retry", () => {
 
   it("does not retry non-idempotent write methods by default", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response("{\"message\":\"temporary\"}", {
-        status: 429
-      })
+      new Response('{"message":"temporary"}', {
+        status: 429,
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -88,18 +88,18 @@ describe("http retry", () => {
         retry: 3,
         retryMaxDelayMs: 10,
         method: "POST",
-        body: { title: "x" }
-      })
+        body: { title: "x" },
+      }),
     ).rejects.toMatchObject({
       details: {
         retry: {
           maxAttempts: 1,
           policy: {
             allowed: false,
-            reason: "unsafe_method"
-          }
-        }
-      }
+            reason: "unsafe_method",
+          },
+        },
+      },
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -109,14 +109,14 @@ describe("http retry", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response("{\"message\":\"temporary\"}", {
-          status: 429
-        })
+        new Response('{"message":"temporary"}', {
+          status: 429,
+        }),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ id: "ok" }), {
-          status: 200
-        })
+          status: 200,
+        }),
       );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -129,8 +129,8 @@ describe("http retry", () => {
       method: "POST",
       body: { title: "x" },
       headers: {
-        "Idempotency-Key": "req-1"
-      }
+        "Idempotency-Key": "req-1",
+      },
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -139,9 +139,9 @@ describe("http retry", () => {
 
   it("redacts query string from verbose retry-skip logs", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response("{\"message\":\"temporary\"}", {
-        status: 429
-      })
+      new Response('{"message":"temporary"}', {
+        status: 429,
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -155,10 +155,10 @@ describe("http retry", () => {
         retry: 2,
         retryMaxDelayMs: 10,
         method: "POST",
-        verbose: true
-      })
+        verbose: true,
+      }),
     ).rejects.toMatchObject({
-      code: "NETWORK_ERROR"
+      code: "NETWORK_ERROR",
     });
 
     const logs = stderrSpy.mock.calls.map((call) => String(call[0])).join("");

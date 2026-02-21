@@ -18,11 +18,11 @@ describe("validate error contract", () => {
       ok: false,
       error: {
         code: "INVALID_INPUT",
-        retryable: false
+        retryable: false,
       },
       meta: {
-        version: "0.x"
-      }
+        version: "0.x",
+      },
     });
     expect(body.error.message).toContain("Invalid JSON file");
   });

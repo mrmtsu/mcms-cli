@@ -40,7 +40,7 @@ export async function resolveDocsProvider(source: DocsSourceMode): Promise<Resol
     return {
       provider: createLocalDocsProvider(),
       sourceResolved: "local",
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -50,7 +50,7 @@ export async function resolveDocsProvider(source: DocsSourceMode): Promise<Resol
     return {
       provider,
       sourceResolved: "mcp",
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -60,7 +60,7 @@ export async function resolveDocsProvider(source: DocsSourceMode): Promise<Resol
     return {
       provider: mcpProvider,
       sourceResolved: "mcp",
-      warnings: []
+      warnings: [],
     };
   } catch (error) {
     await mcpProvider.dispose?.();
@@ -68,7 +68,7 @@ export async function resolveDocsProvider(source: DocsSourceMode): Promise<Resol
     return {
       provider: createLocalDocsProvider(),
       sourceResolved: "local",
-      warnings: [`MCP source is unavailable, fell back to local source: ${reason}`]
+      warnings: [`MCP source is unavailable, fell back to local source: ${reason}`],
     };
   }
 }
@@ -82,11 +82,14 @@ export function parseDocsSourceOption(value: string | undefined): DocsSourceMode
   throw new CliError({
     code: "INVALID_INPUT",
     message: `Invalid source: ${value}. Expected auto, mcp, or local.`,
-    exitCode: EXIT_CODE.INVALID_INPUT
+    exitCode: EXIT_CODE.INVALID_INPUT,
   });
 }
 
-export function truncateMarkdown(markdown: string, maxChars: number | undefined): {
+export function truncateMarkdown(
+  markdown: string,
+  maxChars: number | undefined,
+): {
   markdown: string;
   truncated: boolean;
   originalLength: number;
@@ -96,14 +99,14 @@ export function truncateMarkdown(markdown: string, maxChars: number | undefined)
     return {
       markdown,
       truncated: false,
-      originalLength
+      originalLength,
     };
   }
 
   return {
     markdown: `${markdown.slice(0, maxChars)}\n\n<!-- truncated -->`,
     truncated: true,
-    originalLength
+    originalLength,
   };
 }
 

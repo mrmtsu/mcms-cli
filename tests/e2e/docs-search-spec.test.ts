@@ -9,7 +9,7 @@ const MOCK_MCP_COMMAND = resolve(process.cwd(), "tests/fixtures/mock-doc-mcp-ser
 function mcpEnv(): NodeJS.ProcessEnv {
   chmodSync(MOCK_MCP_COMMAND, 0o755);
   return {
-    MICROCMS_DOC_MCP_COMMAND: MOCK_MCP_COMMAND
+    MICROCMS_DOC_MCP_COMMAND: MOCK_MCP_COMMAND,
   };
 }
 
@@ -17,7 +17,7 @@ describe("docs/search/spec commands", () => {
   it("falls back to local source for docs list when MCP is unavailable", () => {
     const missingCommand = join(mkdtempSync(join(tmpdir(), "mcms-docs-missing-")), "missing-mcp");
     const result = runCli(["docs", "list", "--json"], {
-      MICROCMS_DOC_MCP_COMMAND: missingCommand
+      MICROCMS_DOC_MCP_COMMAND: missingCommand,
     });
 
     expect(result.code).toBe(0);
@@ -34,18 +34,19 @@ describe("docs/search/spec commands", () => {
     const body = JSON.parse(result.stdout);
     expect(body.data.sourceResolved).toBe("mcp");
     expect(body.data.total).toBeGreaterThan(0);
-    expect(body.data.docs.some((doc: { filename: string }) => doc.filename === "コンテンツ一覧取得API.md")).toBe(true);
+    expect(
+      body.data.docs.some(
+        (doc: { filename: string }) => doc.filename === "コンテンツ一覧取得API.md",
+      ),
+    ).toBe(true);
   });
 
   it("works for docs list without API key/service domain config", () => {
-    const result = runCli(
-      ["docs", "list", "--source", "mcp", "--json"],
-      {
-        ...mcpEnv(),
-        MICROCMS_API_KEY: "",
-        MICROCMS_SERVICE_DOMAIN: ""
-      }
-    );
+    const result = runCli(["docs", "list", "--source", "mcp", "--json"], {
+      ...mcpEnv(),
+      MICROCMS_API_KEY: "",
+      MICROCMS_SERVICE_DOMAIN: "",
+    });
 
     expect(result.code).toBe(0);
     const body = JSON.parse(result.stdout);
@@ -63,8 +64,18 @@ describe("docs/search/spec commands", () => {
 
   it("gets markdown via MCP source in JSON mode", () => {
     const result = runCli(
-      ["docs", "get", "--source", "mcp", "--category", "content-api", "--file", "コンテンツ一覧取得API.md", "--json"],
-      mcpEnv()
+      [
+        "docs",
+        "get",
+        "--source",
+        "mcp",
+        "--category",
+        "content-api",
+        "--file",
+        "コンテンツ一覧取得API.md",
+        "--json",
+      ],
+      mcpEnv(),
     );
     expect(result.code).toBe(0);
 
@@ -77,7 +88,7 @@ describe("docs/search/spec commands", () => {
   it("gets markdown via MCP source in raw mode", () => {
     const result = runCli(
       ["docs", "get", "--source", "mcp", "--category", "manual", "--file", "はじめに.md"],
-      mcpEnv()
+      mcpEnv(),
     );
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("# はじめに");
@@ -97,9 +108,9 @@ describe("docs/search/spec commands", () => {
         "コンテンツ一覧取得API.md",
         "--max-chars",
         "20",
-        "--json"
+        "--json",
       ],
-      mcpEnv()
+      mcpEnv(),
     );
     expect(result.code).toBe(0);
     const body = JSON.parse(result.stdout);
@@ -122,7 +133,9 @@ describe("docs/search/spec commands", () => {
     expect(result.code).toBe(0);
     const body = JSON.parse(result.stdout);
     expect(body.data.name).toBe("microcms");
-    expect(body.data.commands.some((command: { path: string }) => command.path === "docs get")).toBe(true);
+    expect(
+      body.data.commands.some((command: { path: string }) => command.path === "docs get"),
+    ).toBe(true);
   });
 
   it("validates docs/search options", () => {
@@ -143,7 +156,7 @@ describe("docs/search/spec commands", () => {
       "はじめに.md",
       "--max-chars",
       "0",
-      "--json"
+      "--json",
     ]);
     expect(invalidMaxChars.code).toBe(2);
     expect(JSON.parse(invalidMaxChars.stderr).error.code).toBe("INVALID_INPUT");

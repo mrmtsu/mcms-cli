@@ -33,7 +33,7 @@ export async function requestJson<T>(params: JsonRequestParams): Promise<JsonRes
   return requestWithRetry<T>(
     {
       ...params,
-      method
+      method,
     },
     async (signal) => {
       return fetch(params.url, {
@@ -41,12 +41,12 @@ export async function requestJson<T>(params: JsonRequestParams): Promise<JsonRes
         headers: {
           "Content-Type": "application/json",
           "X-MICROCMS-API-KEY": params.apiKey,
-          ...params.headers
+          ...params.headers,
         },
         body: params.body === undefined ? undefined : JSON.stringify(params.body),
-        signal
+        signal,
       });
-    }
+    },
   );
 }
 
@@ -58,25 +58,25 @@ export async function requestFormData<T>(params: FormRequestParams): Promise<Jso
   return requestWithRetry<T>(
     {
       ...params,
-      method: "POST"
+      method: "POST",
     },
     async (signal) => {
       return fetch(params.url, {
         method: "POST",
         headers: {
           "X-MICROCMS-API-KEY": params.apiKey,
-          ...params.headers
+          ...params.headers,
         },
         body: params.formData,
-        signal
+        signal,
       });
-    }
+    },
   );
 }
 
 async function requestWithRetry<T>(
   params: RequestBaseParams,
-  sender: (signal: AbortSignal) => Promise<Response>
+  sender: (signal: AbortSignal) => Promise<Response>,
 ): Promise<JsonResponse<T>> {
   const retryPolicy = resolveRetryPolicy(params.method, params.headers);
   const maxAttempts = retryPolicy.allowed ? params.retry + 1 : 1;
@@ -104,7 +104,7 @@ async function requestWithRetry<T>(
       const data = await parseSuccessBody<T>(response);
       return {
         data,
-        requestId
+        requestId,
       };
     }
 
@@ -114,12 +114,12 @@ async function requestWithRetry<T>(
     const errorDetails = withMetadata(responseBody, {
       status: response.status,
       requestId,
-      retryAfterMs
+      retryAfterMs,
     });
     const normalized = fromHttpStatus(
       response.status,
       `microCMS API request failed with status ${response.status}`,
-      errorDetails
+      errorDetails,
     );
 
     if (shouldRetry(normalized, attempt, maxAttempts)) {
@@ -136,11 +136,14 @@ async function requestWithRetry<T>(
   throw new CliError({
     code: "UNKNOWN_ERROR",
     message: "Retry loop terminated unexpectedly",
-    exitCode: EXIT_CODE.UNKNOWN
+    exitCode: EXIT_CODE.UNKNOWN,
   });
 }
 
-async function withTimeout(timeoutMs: number, sender: (signal: AbortSignal) => Promise<Response>): Promise<Response> {
+async function withTimeout(
+  timeoutMs: number,
+  sender: (signal: AbortSignal) => Promise<Response>,
+): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -151,13 +154,16 @@ async function withTimeout(timeoutMs: number, sender: (signal: AbortSignal) => P
   }
 }
 
-function resolveRetryPolicy(method: RequestBaseParams["method"], headers?: Record<string, string>): RetryPolicy {
+function resolveRetryPolicy(
+  method: RequestBaseParams["method"],
+  headers?: Record<string, string>,
+): RetryPolicy {
   const upperMethod = method.toUpperCase();
 
   if (upperMethod === "GET") {
     return {
       allowed: true,
-      reason: "safe_method"
+      reason: "safe_method",
     };
   }
 
@@ -173,13 +179,13 @@ function resolveRetryPolicy(method: RequestBaseParams["method"], headers?: Recor
   if (hasIdempotencyKey) {
     return {
       allowed: true,
-      reason: "idempotency_key"
+      reason: "idempotency_key",
     };
   }
 
   return {
     allowed: false,
-    reason: "unsafe_method"
+    reason: "unsafe_method",
   };
 }
 
@@ -189,7 +195,7 @@ function normalizeNetworkError(error: unknown, timeoutMs: number): CliError {
       code: "NETWORK_ERROR",
       message: `Request timed out after ${timeoutMs}ms`,
       exitCode: EXIT_CODE.NETWORK,
-      retryable: true
+      retryable: true,
     });
   }
 
@@ -205,7 +211,7 @@ function emitRetryLog(
   error: CliError,
   attempt: number,
   maxAttempts: number,
-  delayMs: number
+  delayMs: number,
 ): void {
   if (!params.verbose) {
     return;
@@ -213,11 +219,15 @@ function emitRetryLog(
 
   const nextAttempt = attempt + 1;
   process.stderr.write(
-    `[retry] ${error.code} on attempt ${attempt}/${maxAttempts}, retrying attempt ${nextAttempt} in ${delayMs}ms\n`
+    `[retry] ${error.code} on attempt ${attempt}/${maxAttempts}, retrying attempt ${nextAttempt} in ${delayMs}ms\n`,
   );
 }
 
-function emitRetrySkipLog(params: RequestBaseParams, error: CliError, retryPolicy: RetryPolicy): void {
+function emitRetrySkipLog(
+  params: RequestBaseParams,
+  error: CliError,
+  retryPolicy: RetryPolicy,
+): void {
   if (!params.verbose) {
     return;
   }
@@ -228,11 +238,15 @@ function emitRetrySkipLog(params: RequestBaseParams, error: CliError, retryPolic
 
   const safeUrl = sanitizeUrlForLog(params.url);
   process.stderr.write(
-    `[retry] skipped for ${params.method} ${safeUrl} because request is not retry-safe (set an idempotency key to enable)\n`
+    `[retry] skipped for ${params.method} ${safeUrl} because request is not retry-safe (set an idempotency key to enable)\n`,
   );
 }
 
-function computeRetryDelay(attempt: number, retryAfterMs: number | undefined, maxDelayMs: number): number {
+function computeRetryDelay(
+  attempt: number,
+  retryAfterMs: number | undefined,
+  maxDelayMs: number,
+): number {
   if (retryAfterMs !== undefined) {
     return Math.max(0, Math.min(retryAfterMs, maxDelayMs));
   }
@@ -270,13 +284,13 @@ function withMetadata(body: unknown, metadata: Record<string, unknown>): unknown
   if (typeof body === "object" && body !== null && !Array.isArray(body)) {
     return {
       ...(body as Record<string, unknown>),
-      ...metadata
+      ...metadata,
     };
   }
 
   return {
     body,
-    ...metadata
+    ...metadata,
   };
 }
 
@@ -284,7 +298,7 @@ function withRetryDiagnostics(
   error: CliError,
   attempt: number,
   maxAttempts: number,
-  retryPolicy: RetryPolicy
+  retryPolicy: RetryPolicy,
 ): CliError {
   const retriesUsed = Math.max(0, attempt - 1);
   const details = withMetadata(error.details, {
@@ -292,8 +306,8 @@ function withRetryDiagnostics(
       attempts: attempt,
       retriesUsed,
       maxAttempts,
-      policy: retryPolicy
-    }
+      policy: retryPolicy,
+    },
   });
 
   return new CliError({
@@ -301,7 +315,7 @@ function withRetryDiagnostics(
     message: error.message,
     exitCode: error.exitCode,
     retryable: error.retryable,
-    details
+    details,
   });
 }
 

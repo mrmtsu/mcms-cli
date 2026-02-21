@@ -8,7 +8,7 @@ describe("docs/search/spec contract", () => {
   it("keeps stable success envelope for docs list / search / spec", () => {
     const missingCommand = join(mkdtempSync(join(tmpdir(), "mcms-docs-contract-")), "missing-mcp");
     const env = {
-      MICROCMS_DOC_MCP_COMMAND: missingCommand
+      MICROCMS_DOC_MCP_COMMAND: missingCommand,
     };
 
     const docsResult = runCli(["docs", "list", "--json"], env);

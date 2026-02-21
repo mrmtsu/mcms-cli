@@ -8,20 +8,19 @@ export function createLocalDocsProvider(): DocsProvider {
       return {
         categories: [],
         docs: [],
-        total: 0
+        total: 0,
       };
     },
     async getDocument({ category, filename }) {
       throw new CliError({
         code: "INVALID_INPUT",
-        message:
-          `Document markdown is unavailable in local source. Install/enable microcms-document-mcp-server and use --source mcp or --source auto.`,
+        message: `Document markdown is unavailable in local source. Install/enable microcms-document-mcp-server and use --source mcp or --source auto.`,
         exitCode: EXIT_CODE.INVALID_INPUT,
         details: {
           category,
-          filename
-        }
+          filename,
+        },
       });
-    }
+    },
   };
 }

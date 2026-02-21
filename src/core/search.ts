@@ -16,7 +16,7 @@ export function rankSearchHits(query: string, hits: SearchHit[], limit: number):
   const scored = hits
     .map((hit) => ({
       hit,
-      score: computeScore(tokens, normalizedQuery, `${hit.title}\n${hit.ref}\n${hit.snippet}`)
+      score: computeScore(tokens, normalizedQuery, `${hit.title}\n${hit.ref}\n${hit.snippet}`),
     }))
     .filter((item) => item.score > 0)
     .sort((a, b) => {
@@ -29,7 +29,7 @@ export function rankSearchHits(query: string, hits: SearchHit[], limit: number):
     .slice(0, limit)
     .map((item) => ({
       ...item.hit,
-      score: item.score
+      score: item.score,
     }));
 
   return scored;

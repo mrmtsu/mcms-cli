@@ -50,7 +50,7 @@ export function registerTypesCommands(program: Command): void {
           throw new CliError({
             code: "INVALID_INPUT",
             message: "No endpoints were found. Specify --endpoints or provide --schema.",
-            exitCode: EXIT_CODE.INVALID_INPUT
+            exitCode: EXIT_CODE.INVALID_INPUT,
           });
         }
 
@@ -63,7 +63,7 @@ export function registerTypesCommands(program: Command): void {
 
         source = buildSchemaBundle({
           serviceDomain: ctx.serviceDomain,
-          apis
+          apis,
         });
       }
 
@@ -72,7 +72,7 @@ export function registerTypesCommands(program: Command): void {
         throw new CliError({
           code: "INVALID_INPUT",
           message: "No schema entries were found to generate types.",
-          exitCode: EXIT_CODE.INVALID_INPUT
+          exitCode: EXIT_CODE.INVALID_INPUT,
         });
       }
 
@@ -86,9 +86,9 @@ export function registerTypesCommands(program: Command): void {
           out: outPath,
           endpointCount: generated.endpointCount,
           warnings: generated.warnings,
-          source: options.schema ? "schema_file" : "management_api"
+          source: options.schema ? "schema_file" : "management_api",
         },
-        requestId
+        requestId,
       );
     });
 }

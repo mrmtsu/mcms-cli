@@ -18,6 +18,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsx src/cli.ts",
+    "lint": "oxlint --deny-warnings src tests vitest.config.ts",
+    "format": "oxfmt --write src tests vitest.config.ts",
+    "format:check": "oxfmt --check src tests vitest.config.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -33,6 +36,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
+    "oxfmt": "^0.34.0",
+    "oxlint": "^1.49.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8"

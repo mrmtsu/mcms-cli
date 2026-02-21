@@ -5,7 +5,7 @@ export const EXIT_CODE = {
   AUTH: 3,
   PERMISSION: 4,
   NETWORK: 5,
-  CONFLICT: 6
+  CONFLICT: 6,
 } as const;
 
 export type ExitCode = (typeof EXIT_CODE)[keyof typeof EXIT_CODE];

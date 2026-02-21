@@ -11,6 +11,8 @@ Thanks for contributing to `mcms-cli`.
    ```
 3. Run tests and type checks:
    ```bash
+   npm run lint
+   npm run format:check
    npm run typecheck
    npm test
    npm run build

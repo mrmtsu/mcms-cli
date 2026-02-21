@@ -14,32 +14,40 @@ export function registerValidateCommand(program: Command): void {
     .requiredOption("--file <path>", "Payload JSON file")
     .option("--strict-warnings", "treat warnings as validation errors")
     .description("Run lightweight payload precheck before create/update")
-    .action(async (endpoint: string, options: { file: string; strictWarnings?: boolean }, command: Command) => {
-      const ctx = await contextFromCommand(command);
-      const payload = assertObjectPayload(await readJsonFile(options.file));
-      const apiInfo = await getApiInfo(ctx, endpoint);
-      const result = validatePayload(payload, apiInfo.data);
-      const hasStrictWarningFailure = Boolean(options.strictWarnings && result.warnings.length > 0);
+    .action(
+      async (
+        endpoint: string,
+        options: { file: string; strictWarnings?: boolean },
+        command: Command,
+      ) => {
+        const ctx = await contextFromCommand(command);
+        const payload = assertObjectPayload(await readJsonFile(options.file));
+        const apiInfo = await getApiInfo(ctx, endpoint);
+        const result = validatePayload(payload, apiInfo.data);
+        const hasStrictWarningFailure = Boolean(
+          options.strictWarnings && result.warnings.length > 0,
+        );
 
-      if (!result.valid || hasStrictWarningFailure) {
-        throw new CliError({
-          code: "INVALID_INPUT",
-          message: "Payload validation failed",
-          details: {
+        if (!result.valid || hasStrictWarningFailure) {
+          throw new CliError({
+            code: "INVALID_INPUT",
+            message: "Payload validation failed",
+            details: {
+              ...result,
+              strictWarnings: Boolean(options.strictWarnings),
+            },
+            exitCode: EXIT_CODE.INVALID_INPUT,
+          });
+        }
+
+        printSuccess(
+          ctx,
+          {
+            endpoint,
             ...result,
-            strictWarnings: Boolean(options.strictWarnings)
           },
-          exitCode: EXIT_CODE.INVALID_INPUT
-        });
-      }
-
-      printSuccess(
-        ctx,
-        {
-          endpoint,
-          ...result
-        },
-        apiInfo.requestId
-      );
-    });
+          apiInfo.requestId,
+        );
+      },
+    );
 }

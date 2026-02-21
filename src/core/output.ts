@@ -24,14 +24,18 @@ type ErrorEnvelope = {
 
 type Row = Record<string, unknown>;
 
-export function printSuccess(ctx: RuntimeContext, data: unknown, requestId: string | null = null): void {
+export function printSuccess(
+  ctx: RuntimeContext,
+  data: unknown,
+  requestId: string | null = null,
+): void {
   const payload: SuccessEnvelope = {
     ok: true,
     data,
     meta: {
       requestId,
-      version: OUTPUT_VERSION
-    }
+      version: OUTPUT_VERSION,
+    },
   };
 
   if (ctx.json) {
@@ -57,14 +61,18 @@ export function printSuccess(ctx: RuntimeContext, data: unknown, requestId: stri
   process.stdout.write(`${inspect(data, { colors: ctx.color, depth: 6 })}\n`);
 }
 
-export function printError(ctx: RuntimeContext, error: CliError, requestId: string | null = null): void {
+export function printError(
+  ctx: RuntimeContext,
+  error: CliError,
+  requestId: string | null = null,
+): void {
   const payload: ErrorEnvelope = {
     ok: false,
     error: error.toJson({ includeDetails: ctx.verbose }),
     meta: {
       requestId,
-      version: OUTPUT_VERSION
-    }
+      version: OUTPUT_VERSION,
+    },
   };
 
   if (ctx.json) {
@@ -97,7 +105,9 @@ function renderPlain(data: unknown, selectFields?: string[]): string {
       return "(empty)";
     }
 
-    return objectWithContents.contents.map((item) => renderPlainItem(item, selectFields)).join("\n");
+    return objectWithContents.contents
+      .map((item) => renderPlainItem(item, selectFields))
+      .join("\n");
   }
 
   return renderPlainItem(data, selectFields);
@@ -136,7 +146,12 @@ function renderTable(data: unknown, selectFields?: string[]): string {
 
   const header = formatTableRow(columns, widths);
   const separator = widths.map((width) => "-".repeat(width)).join("-+-");
-  const body = rows.map((row) => formatTableRow(columns.map((column) => formatScalar(row[column])), widths));
+  const body = rows.map((row) =>
+    formatTableRow(
+      columns.map((column) => formatScalar(row[column])),
+      widths,
+    ),
+  );
 
   return [header, separator, ...body].join("\n");
 }
@@ -177,7 +192,7 @@ function getObjectWithContents(data: unknown): { contents: unknown[] } | null {
   }
 
   return {
-    contents: maybeContents
+    contents: maybeContents,
   };
 }
 

@@ -42,7 +42,7 @@ export function registerSchemaCommands(program: Command): void {
         throw new CliError({
           code: "INVALID_INPUT",
           message: "No endpoints were found. Specify --endpoints or check API permissions.",
-          exitCode: EXIT_CODE.INVALID_INPUT
+          exitCode: EXIT_CODE.INVALID_INPUT,
         });
       }
 
@@ -52,13 +52,13 @@ export function registerSchemaCommands(program: Command): void {
         requestId = info.requestId ?? requestId;
         pulled.push({
           endpoint,
-          api: info.data
+          api: info.data,
         });
       }
 
       const bundle = buildSchemaBundle({
         serviceDomain: ctx.serviceDomain,
-        apis: pulled
+        apis: pulled,
       });
 
       const outPath = options.out ?? "microcms-schema.json";
@@ -70,9 +70,9 @@ export function registerSchemaCommands(program: Command): void {
         {
           out: outPath,
           endpointCount: pulled.length,
-          endpoints: pulled.map((item) => item.endpoint)
+          endpoints: pulled.map((item) => item.endpoint),
         },
-        requestId
+        requestId,
       );
     });
 }

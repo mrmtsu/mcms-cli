@@ -1,5 +1,11 @@
 import { Command } from "commander";
-import { createContent, deleteContent, getContent, listContent, updateContent } from "../core/client.js";
+import {
+  createContent,
+  deleteContent,
+  getContent,
+  listContent,
+  updateContent,
+} from "../core/client.js";
 import type { RuntimeContext } from "../core/context.js";
 import { CliError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
@@ -50,7 +56,7 @@ export function registerContentCommands(program: Command): void {
         fields: options.fields,
         ids: options.ids,
         depth: parseIntegerOption("depth", options.depth, { min: 0, max: 3 }),
-        draftKey: options.draftKey
+        draftKey: options.draftKey,
       });
       const result = options.all
         ? await listContentAll(ctx, endpoint, queries)
@@ -69,7 +75,12 @@ export function registerContentCommands(program: Command): void {
       const options = actionArgs[2] as { draftKey?: string };
       const command = getActionCommand(actionArgs);
       const ctx = await contextFromCommand(command);
-      const result = await getContent(ctx, endpoint, id, compactObject({ draftKey: options.draftKey }));
+      const result = await getContent(
+        ctx,
+        endpoint,
+        id,
+        compactObject({ draftKey: options.draftKey }),
+      );
       printSuccess(ctx, result.data, result.requestId);
     });
 
@@ -90,7 +101,7 @@ export function registerContentCommands(program: Command): void {
           dryRun: true,
           operation: "content.create",
           endpoint,
-          payload
+          payload,
         });
         return;
       }
@@ -119,7 +130,7 @@ export function registerContentCommands(program: Command): void {
           operation: "content.update",
           endpoint,
           id,
-          payload
+          payload,
         });
         return;
       }
@@ -145,7 +156,7 @@ export function registerContentCommands(program: Command): void {
           dryRun: true,
           operation: "content.delete",
           endpoint,
-          id
+          id,
         });
         return;
       }
@@ -156,14 +167,16 @@ export function registerContentCommands(program: Command): void {
           ? result.data
           : {
               id,
-              deleted: true
+              deleted: true,
             };
       printSuccess(ctx, data, result.requestId);
     });
 }
 
 function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
-  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined)) as Partial<T>;
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined),
+  ) as Partial<T>;
 }
 
 async function listContentAll(
@@ -179,7 +192,7 @@ async function listContentAll(
     ids: string;
     depth: number;
     draftKey: string;
-  }>
+  }>,
 ): Promise<{ data: unknown; requestId: string | null }> {
   const pageSize = queries.limit ?? 100;
   let offset = queries.offset ?? 0;
@@ -192,7 +205,7 @@ async function listContentAll(
     const result = await listContent(ctx, endpoint, {
       ...queries,
       limit: pageSize,
-      offset
+      offset,
     });
     requestId = result.requestId;
     const page = parseListShape(result.data);
@@ -201,7 +214,7 @@ async function listContentAll(
       throw new CliError({
         code: "API_ERROR",
         message: "--all requires a list response containing `contents` and `totalCount`.",
-        exitCode: EXIT_CODE.UNKNOWN
+        exitCode: EXIT_CODE.UNKNOWN,
       });
     }
 
@@ -220,15 +233,13 @@ async function listContentAll(
       contents: mergedContents,
       totalCount: totalCount ?? mergedContents.length,
       offset: startOffset,
-      limit: pageSize
+      limit: pageSize,
     },
-    requestId
+    requestId,
   };
 }
 
-function parseListShape(
-  data: unknown
-): {
+function parseListShape(data: unknown): {
   contents: unknown[];
   totalCount: number;
 } | null {
@@ -243,6 +254,6 @@ function parseListShape(
 
   return {
     contents: candidate.contents,
-    totalCount: candidate.totalCount
+    totalCount: candidate.totalCount,
   };
 }

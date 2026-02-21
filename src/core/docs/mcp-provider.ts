@@ -80,30 +80,33 @@ export function createMcpDocsProvider(): DocsProvider & { healthcheck(): Promise
       return {
         categories: [...counts.entries()].map(([category, count]) => ({ category, count })),
         docs,
-        total: docs.length
+        total: docs.length,
       };
     },
     async getDocument(params): Promise<DocsGetResult> {
       const raw = await callTool(client, "search_document", {
         category: params.category,
-        filename: params.filename
+        filename: params.filename,
       });
 
       return {
         category: params.category,
         filename: params.filename,
-        markdown: normalizeSearchDocumentOutput(raw)
+        markdown: normalizeSearchDocumentOutput(raw),
       };
     },
     async dispose() {
       await client.close();
-    }
+    },
   };
 }
 
 function createMcpClient(runtime: McpRuntime): McpClient {
   let nextId = 1;
-  const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }>();
+  const pending = new Map<
+    number,
+    { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }
+  >();
   const stderrChunks: string[] = [];
   let processRef: ChildProcessWithoutNullStreams | null = null;
   let initialized = false;
@@ -120,7 +123,7 @@ function createMcpClient(runtime: McpRuntime): McpClient {
 
     const child = spawn(runtime.command, runtime.args, {
       stdio: "pipe",
-      env: buildMcpEnv()
+      env: buildMcpEnv(),
     });
     processRef = child;
 
@@ -138,7 +141,9 @@ function createMcpClient(runtime: McpRuntime): McpClient {
     });
 
     child.on("error", (error) => {
-      const wrapped = new Error(`Failed to launch MCP server command "${runtime.command}": ${error.message}`);
+      const wrapped = new Error(
+        `Failed to launch MCP server command "${runtime.command}": ${error.message}`,
+      );
       clearStartupTimer();
       startupReject?.(wrapped);
       throwFromPending(wrapped);
@@ -146,7 +151,9 @@ function createMcpClient(runtime: McpRuntime): McpClient {
 
     child.on("exit", (code, signal) => {
       const suffix = stderrChunks.length > 0 ? ` (${stderrChunks.join("").trim()})` : "";
-      const wrapped = new Error(`MCP server exited (code=${code ?? "null"}, signal=${signal ?? "null"})${suffix}`);
+      const wrapped = new Error(
+        `MCP server exited (code=${code ?? "null"}, signal=${signal ?? "null"})${suffix}`,
+      );
       clearStartupTimer();
       startupReject?.(wrapped);
       throwFromPending(wrapped);
@@ -160,14 +167,17 @@ function createMcpClient(runtime: McpRuntime): McpClient {
       const part = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
       buffer = Buffer.concat([buffer, part]);
       try {
-        for (const message of readTransportMessages(() => buffer, (next) => {
-          buffer = next;
-        })) {
+        for (const message of readTransportMessages(
+          () => buffer,
+          (next) => {
+            buffer = next;
+          },
+        )) {
           onMessage(message);
         }
       } catch (error) {
         const wrapped = new Error(
-          `Failed to parse MCP response: ${error instanceof Error ? error.message : "unknown error"}`
+          `Failed to parse MCP response: ${error instanceof Error ? error.message : "unknown error"}`,
         );
         throwFromPending(wrapped);
       }
@@ -194,18 +204,20 @@ function createMcpClient(runtime: McpRuntime): McpClient {
       capabilities: {},
       clientInfo: {
         name: "mcms-cli",
-        version: "0.1.0"
-      }
+        version: "0.1.0",
+      },
     });
 
     const initializedNotification = serializeTransportMessage({
       jsonrpc: "2.0",
       method: "notifications/initialized",
-      params: {}
+      params: {},
     });
     child.stdin.write(initializedNotification, (error) => {
       if (error) {
-        throwFromPending(new Error(`Failed to send MCP initialized notification: ${error.message}`));
+        throwFromPending(
+          new Error(`Failed to send MCP initialized notification: ${error.message}`),
+        );
       }
     });
   }
@@ -213,14 +225,14 @@ function createMcpClient(runtime: McpRuntime): McpClient {
   async function requestRaw(
     child: ChildProcessWithoutNullStreams,
     method: string,
-    params?: Record<string, unknown>
+    params?: Record<string, unknown>,
   ): Promise<unknown> {
     const id = nextId++;
     const payload: JsonRpcRequest = {
       jsonrpc: "2.0",
       id,
       method,
-      params
+      params,
     };
     const serialized = serializeTransportMessage(payload);
 
@@ -233,7 +245,7 @@ function createMcpClient(runtime: McpRuntime): McpClient {
       pending.set(id, {
         resolve,
         reject,
-        timer
+        timer,
       });
 
       child.stdin.write(serialized, (error) => {
@@ -271,7 +283,8 @@ function createMcpClient(runtime: McpRuntime): McpClient {
     pending.delete(response.id);
 
     if (response.error) {
-      const details = response.error.data === undefined ? "" : ` (${JSON.stringify(response.error.data)})`;
+      const details =
+        response.error.data === undefined ? "" : ` (${JSON.stringify(response.error.data)})`;
       entry.reject(new Error(`${response.error.message ?? "MCP request failed"}${details}`));
       return;
     }
@@ -311,7 +324,7 @@ function createMcpClient(runtime: McpRuntime): McpClient {
 
   return {
     request,
-    close
+    close,
   };
 }
 
@@ -322,13 +335,13 @@ function resolveMcpRuntime(): McpRuntime {
     if (extension === ".js" || extension === ".mjs" || extension === ".cjs") {
       return {
         command: process.execPath,
-        args: [overridden]
+        args: [overridden],
       };
     }
 
     return {
       command: overridden,
-      args: []
+      args: [],
     };
   }
 
@@ -341,25 +354,38 @@ function resolveMcpRuntime(): McpRuntime {
     const binRelative =
       typeof packageJson.bin === "string"
         ? packageJson.bin
-        : packageJson.bin?.["microcms-document-mcp-server"] ?? (packageJson.bin ? Object.values(packageJson.bin)[0] : undefined);
+        : (packageJson.bin?.["microcms-document-mcp-server"] ??
+          (packageJson.bin ? Object.values(packageJson.bin)[0] : undefined));
     if (!binRelative) {
       throw new Error("bin field is missing");
     }
 
     return {
       command: process.execPath,
-      args: [resolve(dirname(packageJsonPath), binRelative)]
+      args: [resolve(dirname(packageJsonPath), binRelative)],
     };
   } catch {
     return {
       command: "microcms-document-mcp-server",
-      args: []
+      args: [],
     };
   }
 }
 
 function buildMcpEnv(): NodeJS.ProcessEnv {
-  const keys = ["PATH", "HOME", "USERPROFILE", "TMPDIR", "TMP", "TEMP", "SYSTEMROOT", "COMSPEC", "WINDIR", "LANG", "LC_ALL"];
+  const keys = [
+    "PATH",
+    "HOME",
+    "USERPROFILE",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "SYSTEMROOT",
+    "COMSPEC",
+    "WINDIR",
+    "LANG",
+    "LC_ALL",
+  ];
   const env: NodeJS.ProcessEnv = {};
 
   for (const key of keys) {
@@ -372,11 +398,15 @@ function buildMcpEnv(): NodeJS.ProcessEnv {
   return env;
 }
 
-async function callTool(client: McpClient, name: string, args?: Record<string, unknown>): Promise<string> {
+async function callTool(
+  client: McpClient,
+  name: string,
+  args?: Record<string, unknown>,
+): Promise<string> {
   try {
     const result = await client.request("tools/call", {
       name,
-      arguments: args ?? {}
+      arguments: args ?? {},
     });
     const text = extractToolText(result);
     if (text === null) {
@@ -387,7 +417,7 @@ async function callTool(client: McpClient, name: string, args?: Record<string, u
     throw new CliError({
       code: "INVALID_INPUT",
       message: `MCP tool call failed (${name}): ${error instanceof Error ? error.message : "unknown error"}`,
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 }
@@ -435,7 +465,7 @@ function parseListDocumentsPayload(raw: string): DocsListDocumentsPayload {
     throw new CliError({
       code: "INVALID_INPUT",
       message: "MCP list_documents returned non-JSON payload",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -443,7 +473,7 @@ function parseListDocumentsPayload(raw: string): DocsListDocumentsPayload {
     throw new CliError({
       code: "INVALID_INPUT",
       message: "MCP list_documents returned invalid payload",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -465,7 +495,10 @@ function serializeTransportMessage(payload: unknown): Buffer {
   return Buffer.from(`${JSON.stringify(payload)}\n`, "utf8");
 }
 
-function* readTransportMessages(readBuffer: () => Buffer, setBuffer: (next: Buffer) => void): Generator<unknown> {
+function* readTransportMessages(
+  readBuffer: () => Buffer,
+  setBuffer: (next: Buffer) => void,
+): Generator<unknown> {
   while (true) {
     const current = readBuffer();
     if (current.length === 0) {
@@ -515,7 +548,9 @@ function parseJsonMessage(raw: string): unknown {
   try {
     return JSON.parse(raw);
   } catch (error) {
-    throw new Error(`MCP transport error: invalid JSON payload (${error instanceof Error ? error.message : "unknown"})`);
+    throw new Error(
+      `MCP transport error: invalid JSON payload (${error instanceof Error ? error.message : "unknown"})`,
+    );
   }
 }
 

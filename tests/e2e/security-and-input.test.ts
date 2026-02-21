@@ -24,8 +24,19 @@ describe("security and input hardening", () => {
 
   it("rejects invalid numeric content query option", () => {
     const result = runCli(
-      ["content", "list", "notes", "--limit", "abc", "--service-domain", "example", "--api-key", "key", "--json"],
-      {}
+      [
+        "content",
+        "list",
+        "notes",
+        "--limit",
+        "abc",
+        "--service-domain",
+        "example",
+        "--api-key",
+        "key",
+        "--json",
+      ],
+      {},
     );
 
     expect(result.code).toBe(2);
@@ -35,7 +46,11 @@ describe("security and input hardening", () => {
   });
 
   it("supports --api-key-stdin without exposing key", () => {
-    const result = runCli(["auth", "status", "--api-key-stdin", "--json"], {}, { stdin: "stdin-key\n" });
+    const result = runCli(
+      ["auth", "status", "--api-key-stdin", "--json"],
+      {},
+      { stdin: "stdin-key\n" },
+    );
     expect(result.code).toBe(0);
 
     const body = JSON.parse(result.stdout);
@@ -77,7 +92,7 @@ describe("security and input hardening", () => {
       "--prompt",
       "--api-key",
       "x",
-      "--json"
+      "--json",
     ]);
     expect(result.code).toBe(2);
 
@@ -95,7 +110,7 @@ describe("security and input hardening", () => {
     const result = runCli(
       ["auth", "profile", "add", "permcheck", "--service-domain", "example", "--json"],
       {},
-      { configRoot }
+      { configRoot },
     );
     expect(result.code).toBe(0);
 
@@ -106,7 +121,7 @@ describe("security and input hardening", () => {
 
   it("returns structured JSON error for invalid profile environment variable", () => {
     const result = runCli(["auth", "status", "--json"], {
-      MICROCMS_PROFILE: "***"
+      MICROCMS_PROFILE: "***",
     });
     expect(result.code).toBe(2);
 

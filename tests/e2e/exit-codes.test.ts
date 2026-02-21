@@ -21,7 +21,9 @@ describe("exit codes", () => {
   });
 
   it("prints version from package metadata", () => {
-    const pkg = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8")) as { version: string };
+    const pkg = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8")) as {
+      version: string;
+    };
     const result = runCli(["--version"]);
 
     expect(result.code).toBe(0);

@@ -14,21 +14,24 @@ describe("content CRUD contract", () => {
     writeFileSync(
       createPath,
       JSON.stringify({ title: "contract create", body: "create body" }, null, 2),
-      "utf8"
+      "utf8",
     );
     writeFileSync(
       updatePath,
       JSON.stringify({ title: "contract update", body: "update body" }, null, 2),
-      "utf8"
+      "utf8",
     );
 
     const env = {
       MICROCMS_SERVICE_DOMAIN: "mock",
       MICROCMS_API_KEY: "mock-key",
-      MICROCMS_CONTENT_MOCK_FILE: mockStorePath
+      MICROCMS_CONTENT_MOCK_FILE: mockStorePath,
     };
 
-    const createResult = runCli(["content", "create", "notes", "--file", createPath, "--json"], env);
+    const createResult = runCli(
+      ["content", "create", "notes", "--file", createPath, "--json"],
+      env,
+    );
     expect(createResult.code).toBe(0);
     const createBody = JSON.parse(createResult.stdout);
     expect(createBody).toMatchObject({
@@ -36,12 +39,12 @@ describe("content CRUD contract", () => {
       data: {
         id: expect.any(String),
         title: "contract create",
-        body: "create body"
+        body: "create body",
       },
       meta: {
         requestId: expect.any(String),
-        version: "0.x"
-      }
+        version: "0.x",
+      },
     });
 
     const id = createBody.data.id as string;
@@ -54,26 +57,29 @@ describe("content CRUD contract", () => {
       data: {
         id,
         title: "contract create",
-        body: "create body"
+        body: "create body",
       },
       meta: {
         requestId: expect.any(String),
-        version: "0.x"
-      }
+        version: "0.x",
+      },
     });
 
-    const updateResult = runCli(["content", "update", "notes", id, "--file", updatePath, "--json"], env);
+    const updateResult = runCli(
+      ["content", "update", "notes", id, "--file", updatePath, "--json"],
+      env,
+    );
     expect(updateResult.code).toBe(0);
     const updateBody = JSON.parse(updateResult.stdout);
     expect(updateBody).toMatchObject({
       ok: true,
       data: {
-        id
+        id,
       },
       meta: {
         requestId: expect.any(String),
-        version: "0.x"
-      }
+        version: "0.x",
+      },
     });
 
     const getAfterUpdateResult = runCli(["content", "get", "notes", id, "--json"], env);
@@ -84,12 +90,12 @@ describe("content CRUD contract", () => {
       data: {
         id,
         title: "contract update",
-        body: "update body"
+        body: "update body",
       },
       meta: {
         requestId: expect.any(String),
-        version: "0.x"
-      }
+        version: "0.x",
+      },
     });
 
     const deleteResult = runCli(["content", "delete", "notes", id, "--json"], env);
@@ -99,12 +105,12 @@ describe("content CRUD contract", () => {
       ok: true,
       data: {
         id,
-        deleted: true
+        deleted: true,
       },
       meta: {
         requestId: expect.any(String),
-        version: "0.x"
-      }
+        version: "0.x",
+      },
     });
   });
 });

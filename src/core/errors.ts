@@ -42,7 +42,7 @@ export class CliError extends Error {
     const payload: JsonErrorShape = {
       code: this.code,
       message: this.message,
-      retryable: this.retryable
+      retryable: this.retryable,
     };
 
     if (options?.includeDetails && this.details !== undefined) {
@@ -66,13 +66,7 @@ function isLikelyNetworkError(err: unknown): boolean {
 
   const code = (err as NodeJS.ErrnoException).code;
   if (typeof code === "string") {
-    return [
-      "ECONNRESET",
-      "ECONNREFUSED",
-      "ENOTFOUND",
-      "ETIMEDOUT",
-      "EAI_AGAIN"
-    ].includes(code);
+    return ["ECONNRESET", "ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT", "EAI_AGAIN"].includes(code);
   }
 
   return false;
@@ -85,7 +79,7 @@ export function fromHttpStatus(status: number, message: string, details?: unknow
       message,
       details,
       exitCode: EXIT_CODE.AUTH,
-      retryable: false
+      retryable: false,
     });
   }
 
@@ -95,7 +89,7 @@ export function fromHttpStatus(status: number, message: string, details?: unknow
       message,
       details,
       exitCode: EXIT_CODE.PERMISSION,
-      retryable: false
+      retryable: false,
     });
   }
 
@@ -105,7 +99,7 @@ export function fromHttpStatus(status: number, message: string, details?: unknow
       message,
       details,
       exitCode: EXIT_CODE.INVALID_INPUT,
-      retryable: false
+      retryable: false,
     });
   }
 
@@ -115,7 +109,7 @@ export function fromHttpStatus(status: number, message: string, details?: unknow
       message,
       details,
       exitCode: EXIT_CODE.CONFLICT,
-      retryable: false
+      retryable: false,
     });
   }
 
@@ -125,7 +119,7 @@ export function fromHttpStatus(status: number, message: string, details?: unknow
       message,
       details,
       exitCode: EXIT_CODE.NETWORK,
-      retryable: true
+      retryable: true,
     });
   }
 
@@ -135,7 +129,7 @@ export function fromHttpStatus(status: number, message: string, details?: unknow
       message,
       details,
       exitCode: EXIT_CODE.NETWORK,
-      retryable: true
+      retryable: true,
     });
   }
 
@@ -144,7 +138,7 @@ export function fromHttpStatus(status: number, message: string, details?: unknow
     message,
     details,
     exitCode: EXIT_CODE.UNKNOWN,
-    retryable: false
+    retryable: false,
   });
 }
 
@@ -159,13 +153,17 @@ export function normalizeError(error: unknown): CliError {
       message: "Network request failed",
       details: toErrorDetails(error),
       exitCode: EXIT_CODE.NETWORK,
-      retryable: true
+      retryable: true,
     });
   }
 
   const status = getStatusCode(error);
   if (typeof status === "number") {
-    return fromHttpStatus(status, `microCMS API request failed with status ${status}`, toErrorDetails(error));
+    return fromHttpStatus(
+      status,
+      `microCMS API request failed with status ${status}`,
+      toErrorDetails(error),
+    );
   }
 
   if (error instanceof Error) {
@@ -174,7 +172,7 @@ export function normalizeError(error: unknown): CliError {
       message: error.message,
       details: toErrorDetails(error),
       exitCode: EXIT_CODE.UNKNOWN,
-      retryable: false
+      retryable: false,
     });
   }
 
@@ -183,7 +181,7 @@ export function normalizeError(error: unknown): CliError {
     message: "Unexpected error",
     details: { error },
     exitCode: EXIT_CODE.UNKNOWN,
-    retryable: false
+    retryable: false,
   });
 }
 
@@ -209,7 +207,7 @@ function toErrorDetails(error: unknown): unknown {
   if (error instanceof Error) {
     return {
       name: error.name,
-      message: error.message
+      message: error.message,
     };
   }
 

@@ -11,11 +11,11 @@ describe("auth status contract", () => {
       ok: true,
       data: {
         apiKeyAvailable: false,
-        apiKeySource: "none"
+        apiKeySource: "none",
       },
       meta: {
-        version: "0.x"
-      }
+        version: "0.x",
+      },
     });
     expect(body.meta).toHaveProperty("requestId");
   });

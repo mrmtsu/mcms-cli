@@ -6,8 +6,8 @@ describe("payload validation v2", () => {
     const schema = {
       apiFields: [
         { fieldId: "title", kind: "text", required: true },
-        { fieldId: "views", kind: "number" }
-      ]
+        { fieldId: "views", kind: "number" },
+      ],
     };
 
     const result = validatePayload({ title: "hello", views: "10" }, schema);
@@ -21,9 +21,9 @@ describe("payload validation v2", () => {
         {
           fieldId: "status",
           kind: "select",
-          selectItems: [{ value: "draft" }, { value: "published" }]
-        }
-      ]
+          selectItems: [{ value: "draft" }, { value: "published" }],
+        },
+      ],
     };
 
     const result = validatePayload({ status: "archived" }, schema);
@@ -37,9 +37,9 @@ describe("payload validation v2", () => {
       apiFields: [
         {
           fieldId: "customField",
-          kind: "custom-widget"
-        }
-      ]
+          kind: "custom-widget",
+        },
+      ],
     };
 
     const result = validatePayload({ customField: { any: "shape" } }, schema);

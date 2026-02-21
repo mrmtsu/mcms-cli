@@ -16,7 +16,11 @@ type RunCliOptions = {
   configRoot?: string;
 };
 
-export function runCli(args: string[], env: NodeJS.ProcessEnv = {}, options: RunCliOptions = {}): CliResult {
+export function runCli(
+  args: string[],
+  env: NodeJS.ProcessEnv = {},
+  options: RunCliOptions = {},
+): CliResult {
   const configRoot = options.configRoot ?? mkdtempSync(join(tmpdir(), "microcms-cli-test-"));
 
   const result = spawnSync(process.execPath, ["--import", "tsx", CLI_ENTRY, ...args], {
@@ -24,15 +28,15 @@ export function runCli(args: string[], env: NodeJS.ProcessEnv = {}, options: Run
     env: {
       ...process.env,
       MICROCMS_CLI_CONFIG_HOME: configRoot,
-      ...env
+      ...env,
     },
     input: options.stdin,
-    encoding: "utf8"
+    encoding: "utf8",
   });
 
   return {
     code: result.status,
     stdout: result.stdout,
-    stderr: result.stderr
+    stderr: result.stderr,
   };
 }

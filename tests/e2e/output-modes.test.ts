@@ -16,23 +16,26 @@ describe("human output modes", () => {
           endpoints: {
             notes: {
               "1": { title: "n1" },
-              "2": { title: "n2" }
-            }
-          }
+              "2": { title: "n2" },
+            },
+          },
         },
         null,
-        2
+        2,
       ),
-      "utf8"
+      "utf8",
     );
 
     const env = {
       MICROCMS_SERVICE_DOMAIN: "mock",
       MICROCMS_API_KEY: "mock-key",
-      MICROCMS_CONTENT_MOCK_FILE: mockStorePath
+      MICROCMS_CONTENT_MOCK_FILE: mockStorePath,
     };
 
-    const result = runCli(["content", "list", "notes", "--all", "--plain", "--select", "id,title"], env);
+    const result = runCli(
+      ["content", "list", "notes", "--all", "--plain", "--select", "id,title"],
+      env,
+    );
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("id=1");
     expect(result.stdout).toContain("title=n1");
@@ -48,23 +51,26 @@ describe("human output modes", () => {
           nextId: 2,
           endpoints: {
             notes: {
-              "1": { title: "n1", body: "b1" }
-            }
-          }
+              "1": { title: "n1", body: "b1" },
+            },
+          },
         },
         null,
-        2
+        2,
       ),
-      "utf8"
+      "utf8",
     );
 
     const env = {
       MICROCMS_SERVICE_DOMAIN: "mock",
       MICROCMS_API_KEY: "mock-key",
-      MICROCMS_CONTENT_MOCK_FILE: mockStorePath
+      MICROCMS_CONTENT_MOCK_FILE: mockStorePath,
     };
 
-    const result = runCli(["content", "list", "notes", "--all", "--table", "--select", "id,title"], env);
+    const result = runCli(
+      ["content", "list", "notes", "--all", "--table", "--select", "id,title"],
+      env,
+    );
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("id");
     expect(result.stdout).toContain("title");

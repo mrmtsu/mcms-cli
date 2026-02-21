@@ -66,12 +66,14 @@ export async function createRuntimeContext(options: GlobalOptions): Promise<Runt
         ? "config"
         : "none";
 
-  const profileServiceDomain = profile ? normalizeString(config.profiles?.[profile]?.serviceDomain) : undefined;
+  const profileServiceDomain = profile
+    ? normalizeString(config.profiles?.[profile]?.serviceDomain)
+    : undefined;
   const serviceDomainOption = normalizeString(options.serviceDomain);
   const serviceDomainEnv = normalizeString(process.env.MICROCMS_SERVICE_DOMAIN);
   const serviceDomainConfig = normalizeString(config.serviceDomain);
   const serviceDomain = resolveServiceDomain(
-    serviceDomainOption ?? serviceDomainEnv ?? profileServiceDomain ?? serviceDomainConfig
+    serviceDomainOption ?? serviceDomainEnv ?? profileServiceDomain ?? serviceDomainConfig,
   );
   const serviceDomainSource: ServiceDomainSource = serviceDomainOption
     ? "option"
@@ -91,7 +93,7 @@ export async function createRuntimeContext(options: GlobalOptions): Promise<Runt
     throw new CliError({
       code: "INVALID_INPUT",
       message: "Use either --api-key or --api-key-stdin, not both",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -99,7 +101,7 @@ export async function createRuntimeContext(options: GlobalOptions): Promise<Runt
     throw new CliError({
       code: "INVALID_INPUT",
       message: "Use --prompt alone. It conflicts with --api-key and --api-key-stdin.",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -158,11 +160,14 @@ export async function createRuntimeContext(options: GlobalOptions): Promise<Runt
     serviceDomainSource,
     apiKey,
     apiKeySource,
-    apiKeySourceDetail
+    apiKeySourceDetail,
   };
 }
 
-function parseOutputMode(options: GlobalOptions): { outputMode: OutputMode; selectFields?: string[] } {
+function parseOutputMode(options: GlobalOptions): {
+  outputMode: OutputMode;
+  selectFields?: string[];
+} {
   const plain = Boolean(options.plain);
   const table = Boolean(options.table);
 
@@ -170,7 +175,7 @@ function parseOutputMode(options: GlobalOptions): { outputMode: OutputMode; sele
     throw new CliError({
       code: "INVALID_INPUT",
       message: "Use either --plain or --table, not both",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -178,7 +183,7 @@ function parseOutputMode(options: GlobalOptions): { outputMode: OutputMode; sele
     throw new CliError({
       code: "INVALID_INPUT",
       message: "--json cannot be combined with --plain or --table",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -186,7 +191,7 @@ function parseOutputMode(options: GlobalOptions): { outputMode: OutputMode; sele
 
   return {
     outputMode: table ? "table" : plain ? "plain" : "inspect",
-    selectFields
+    selectFields,
   };
 }
 
@@ -204,7 +209,7 @@ function parseSelectFields(value: string | undefined): string[] | undefined {
     throw new CliError({
       code: "INVALID_INPUT",
       message: "--select requires at least one field name",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -213,7 +218,7 @@ function parseSelectFields(value: string | undefined): string[] | undefined {
     throw new CliError({
       code: "INVALID_INPUT",
       message: "--select supports letters, numbers, dot, underscore, hyphen",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -285,9 +290,10 @@ function resolveProfileName(value: string | undefined): string | undefined {
   if (!/^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,62}[A-Za-z0-9])?$/.test(value)) {
     throw new CliError({
       code: "INVALID_INPUT",
-      message: "Invalid profile name format. Use letters, numbers, dot, underscore, hyphen (1-64 chars).",
+      message:
+        "Invalid profile name format. Use letters, numbers, dot, underscore, hyphen (1-64 chars).",
       exitCode: EXIT_CODE.INVALID_INPUT,
-      details: { provided: value }
+      details: { provided: value },
     });
   }
 
@@ -307,8 +313,8 @@ function resolveServiceDomain(value: string | undefined): string | undefined {
         "Invalid service domain format. Expected lowercase letters, numbers, hyphens, max 63 chars, no leading/trailing hyphen.",
       exitCode: EXIT_CODE.INVALID_INPUT,
       details: {
-        provided: value
-      }
+        provided: value,
+      },
     });
   }
 
@@ -320,7 +326,7 @@ async function readApiKeyFromStdin(): Promise<string> {
     throw new CliError({
       code: "INVALID_INPUT",
       message: "--api-key-stdin requires piped stdin input (TTY is not supported)",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -334,7 +340,7 @@ async function readApiKeyFromStdin(): Promise<string> {
     throw new CliError({
       code: "INVALID_INPUT",
       message: "--api-key-stdin was specified but stdin did not contain an API key",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -346,7 +352,7 @@ async function readApiKeyFromPrompt(): Promise<string> {
     throw new CliError({
       code: "INVALID_INPUT",
       message: "--prompt requires an interactive TTY",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -417,8 +423,8 @@ async function readApiKeyFromPrompt(): Promise<string> {
               new CliError({
                 code: "INVALID_INPUT",
                 message: "No API key was entered",
-                exitCode: EXIT_CODE.INVALID_INPUT
-              })
+                exitCode: EXIT_CODE.INVALID_INPUT,
+              }),
             );
             return;
           }
@@ -432,8 +438,8 @@ async function readApiKeyFromPrompt(): Promise<string> {
             new CliError({
               code: "INVALID_INPUT",
               message: "API key input canceled",
-              exitCode: EXIT_CODE.INVALID_INPUT
-            })
+              exitCode: EXIT_CODE.INVALID_INPUT,
+            }),
           );
           return;
         }
@@ -459,8 +465,8 @@ async function readApiKeyFromPrompt(): Promise<string> {
         new CliError({
           code: "INVALID_INPUT",
           message: "API key input stream ended before completion",
-          exitCode: EXIT_CODE.INVALID_INPUT
-        })
+          exitCode: EXIT_CODE.INVALID_INPUT,
+        }),
       );
     };
 
@@ -469,8 +475,8 @@ async function readApiKeyFromPrompt(): Promise<string> {
         new CliError({
           code: "INVALID_INPUT",
           message: "Failed to read API key from prompt",
-          exitCode: EXIT_CODE.INVALID_INPUT
-        })
+          exitCode: EXIT_CODE.INVALID_INPUT,
+        }),
       );
     };
 
@@ -494,6 +500,6 @@ function invalidInteger(name: string, value: string, expectedRange: string): Cli
   return new CliError({
     code: "INVALID_INPUT",
     message: `Invalid ${name}: ${value}. Expected integer in range ${expectedRange}.`,
-    exitCode: EXIT_CODE.INVALID_INPUT
+    exitCode: EXIT_CODE.INVALID_INPUT,
   });
 }

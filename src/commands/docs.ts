@@ -2,7 +2,11 @@ import { Command } from "commander";
 import { CliError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
 import { printSuccess } from "../core/output.js";
-import { parseDocsSourceOption, resolveDocsProvider, truncateMarkdown } from "../core/docs/provider.js";
+import {
+  parseDocsSourceOption,
+  resolveDocsProvider,
+  truncateMarkdown,
+} from "../core/docs/provider.js";
 import { contextFromCommand, getActionCommand, parseIntegerOption } from "./utils.js";
 
 type DocsListOptions = {
@@ -19,7 +23,9 @@ type DocsGetOptions = {
 };
 
 export function registerDocsCommands(program: Command): void {
-  const docs = program.command("docs").description("Documentation reference operations (no API key required)");
+  const docs = program
+    .command("docs")
+    .description("Documentation reference operations (no API key required)");
 
   docs
     .command("list")
@@ -43,7 +49,7 @@ export function registerDocsCommands(program: Command): void {
           warnings: resolved.warnings,
           categories: listed.categories,
           docs: listed.docs,
-          total: listed.total
+          total: listed.total,
         });
       } finally {
         await resolved.provider.dispose?.();
@@ -64,7 +70,10 @@ export function registerDocsCommands(program: Command): void {
       const source = parseDocsSourceOption(options.source);
       const category = requireValue("category", options.category);
       const filename = requireValue("file", options.file);
-      const maxChars = parseIntegerOption("max-chars", options.maxChars, { min: 1, max: 1_000_000 });
+      const maxChars = parseIntegerOption("max-chars", options.maxChars, {
+        min: 1,
+        max: 1_000_000,
+      });
       const resolved = await resolveDocsProvider(source);
 
       try {
@@ -79,7 +88,7 @@ export function registerDocsCommands(program: Command): void {
             truncated: truncated.truncated,
             originalLength: truncated.originalLength,
             sourceResolved: resolved.sourceResolved,
-            warnings: resolved.warnings
+            warnings: resolved.warnings,
           });
           return;
         }
@@ -105,6 +114,6 @@ function requireValue(field: string, value: string | undefined): string {
   throw new CliError({
     code: "INVALID_INPUT",
     message: `--${field} is required`,
-    exitCode: EXIT_CODE.INVALID_INPUT
+    exitCode: EXIT_CODE.INVALID_INPUT,
   });
 }

@@ -51,9 +51,11 @@ export function registerSearchCommand(program: Command): void {
         try {
           const listed = await resolved.provider.listDocuments({
             category,
-            limit: 200
+            limit: 200,
           });
-          hits.push(...listed.docs.map((doc) => toDocHit(doc.category, doc.filename, sourceResolved)));
+          hits.push(
+            ...listed.docs.map((doc) => toDocHit(doc.category, doc.filename, sourceResolved)),
+          );
         } finally {
           await resolved.provider.dispose?.();
         }
@@ -68,7 +70,7 @@ export function registerSearchCommand(program: Command): void {
         scope,
         sourceResolved,
         warnings,
-        hits: ranked
+        hits: ranked,
       });
     });
 }
@@ -82,7 +84,7 @@ function parseScope(value: string | undefined): SearchScope {
   throw new CliError({
     code: "INVALID_INPUT",
     message: `Invalid scope: ${value}. Expected all, spec, or docs.`,
-    exitCode: EXIT_CODE.INVALID_INPUT
+    exitCode: EXIT_CODE.INVALID_INPUT,
   });
 }
 
@@ -99,7 +101,7 @@ function buildSpecHits(): SearchHit[] {
     ref: command.path,
     snippet: `${command.description}. options: ${command.options.join(", ") || "none"}`,
     score: 0,
-    source: "local" as const
+    source: "local" as const,
   }));
 }
 
@@ -113,6 +115,6 @@ function toDocHit(category: string, filename: string, source: "local" | "mcp"): 
     score: 0,
     source,
     category,
-    filename
+    filename,
   };
 }

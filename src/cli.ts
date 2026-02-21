@@ -52,7 +52,10 @@ async function main(argv: string[]): Promise<void> {
     .option("--select <fields>", "comma-separated field names for --table output")
     .option("--profile <name>", "profile name to resolve service domain / keychain key")
     .option("--service-domain <serviceDomain>", "microCMS service domain")
-    .option("--api-key <apiKey>", "microCMS API key (less secure: may leak via shell history/process list)")
+    .option(
+      "--api-key <apiKey>",
+      "microCMS API key (less secure: may leak via shell history/process list)",
+    )
     .option("--api-key-stdin", "read microCMS API key from stdin")
     .option("--timeout <ms>", "request timeout in milliseconds", "10000")
     .option("--retry <count>", "retry count for retryable failures (0-10)", "2")
@@ -71,7 +74,7 @@ async function main(argv: string[]): Promise<void> {
       if (!isJsonMode) {
         process.stderr.write(text);
       }
-    }
+    },
   });
 
   registerAuthCommands(program);
@@ -92,7 +95,10 @@ async function main(argv: string[]): Promise<void> {
   try {
     await program.parseAsync(argv, { from: "user" });
   } catch (error) {
-    if (error instanceof CommanderError && (error.code === "commander.helpDisplayed" || error.exitCode === 0)) {
+    if (
+      error instanceof CommanderError &&
+      (error.code === "commander.helpDisplayed" || error.exitCode === 0)
+    ) {
       process.exit(EXIT_CODE.SUCCESS);
       return;
     }
@@ -128,7 +134,7 @@ function createFallbackContext(argv: string[]): RuntimeContext {
     serviceDomainSource: "none",
     apiKey: undefined,
     apiKeySource: "none",
-    apiKeySourceDetail: "none"
+    apiKeySourceDetail: "none",
   };
 }
 
@@ -165,8 +171,8 @@ function normalizeCommander(error: unknown): CliError | null {
     message: error.message,
     exitCode: EXIT_CODE.INVALID_INPUT,
     details: {
-      commanderCode: error.code
-    }
+      commanderCode: error.code,
+    },
   });
 }
 

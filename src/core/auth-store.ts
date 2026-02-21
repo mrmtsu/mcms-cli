@@ -27,12 +27,15 @@ export async function canUseKeychain(): Promise<boolean> {
   return keytar !== null;
 }
 
-export async function saveApiKey(serviceDomain: string, apiKey: string): Promise<{ stored: boolean; reason?: string }> {
+export async function saveApiKey(
+  serviceDomain: string,
+  apiKey: string,
+): Promise<{ stored: boolean; reason?: string }> {
   const keytar = await loadKeytar();
   if (!keytar) {
     return {
       stored: false,
-      reason: "keychain_unavailable"
+      reason: "keychain_unavailable",
     };
   }
 
@@ -42,7 +45,7 @@ export async function saveApiKey(serviceDomain: string, apiKey: string): Promise
   } catch {
     return {
       stored: false,
-      reason: "keychain_write_failed"
+      reason: "keychain_write_failed",
     };
   }
 }
@@ -60,12 +63,15 @@ export async function readApiKey(serviceDomain: string): Promise<string | null> 
   }
 }
 
-export async function saveApiKeyForProfile(profile: string, apiKey: string): Promise<{ stored: boolean; reason?: string }> {
+export async function saveApiKeyForProfile(
+  profile: string,
+  apiKey: string,
+): Promise<{ stored: boolean; reason?: string }> {
   const keytar = await loadKeytar();
   if (!keytar) {
     return {
       stored: false,
-      reason: "keychain_unavailable"
+      reason: "keychain_unavailable",
     };
   }
 
@@ -75,7 +81,7 @@ export async function saveApiKeyForProfile(profile: string, apiKey: string): Pro
   } catch {
     return {
       stored: false,
-      reason: "keychain_write_failed"
+      reason: "keychain_write_failed",
     };
   }
 }

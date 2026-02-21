@@ -25,7 +25,7 @@ export function getActionCommand(args: unknown[]): Command {
 export function parseIntegerOption(
   name: string,
   value: string | undefined,
-  range?: { min?: number; max?: number }
+  range?: { min?: number; max?: number },
 ): number | undefined {
   if (!value) {
     return undefined;
@@ -55,7 +55,7 @@ function invalidInteger(name: string, value: string, expected: string): CliError
   return new CliError({
     code: "INVALID_INPUT",
     message: `Invalid ${name}: ${value}. Expected ${expected}.`,
-    exitCode: EXIT_CODE.INVALID_INPUT
+    exitCode: EXIT_CODE.INVALID_INPUT,
   });
 }
 

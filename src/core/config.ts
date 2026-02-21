@@ -36,7 +36,7 @@ export async function readConfig(): Promise<CliConfig> {
       code: "INVALID_INPUT",
       message: `Could not read config file: ${path}`,
       exitCode: EXIT_CODE.INVALID_INPUT,
-      details: { path }
+      details: { path },
     });
   }
 
@@ -48,7 +48,7 @@ export async function readConfig(): Promise<CliConfig> {
       code: "INVALID_INPUT",
       message: `Config file is invalid JSON: ${path}`,
       exitCode: EXIT_CODE.INVALID_INPUT,
-      details: { path }
+      details: { path },
     });
   }
 
@@ -68,14 +68,14 @@ export async function readConfig(): Promise<CliConfig> {
 
               return [name, { serviceDomain: entry.serviceDomain }] as const;
             })
-            .filter((entry): entry is readonly [string, ProfileConfig] => entry !== null)
+            .filter((entry): entry is readonly [string, ProfileConfig] => entry !== null),
         )
       : undefined;
 
   return {
     serviceDomain: typeof parsed.serviceDomain === "string" ? parsed.serviceDomain : undefined,
     defaultProfile: typeof parsed.defaultProfile === "string" ? parsed.defaultProfile : undefined,
-    profiles: profiles && Object.keys(profiles).length > 0 ? profiles : undefined
+    profiles: profiles && Object.keys(profiles).length > 0 ? profiles : undefined,
   };
 }
 
@@ -91,5 +91,7 @@ export async function writeConfig(config: CliConfig): Promise<void> {
 }
 
 function isNoEntryError(error: unknown): boolean {
-  return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "ENOENT";
+  return (
+    typeof error === "object" && error !== null && (error as { code?: unknown }).code === "ENOENT"
+  );
 }

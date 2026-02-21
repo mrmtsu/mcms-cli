@@ -14,11 +14,15 @@ describe("schema type generation", () => {
             apiFields: [
               { fieldId: "title", required: true, kind: "text" },
               { fieldId: "views", kind: "number" },
-              { fieldId: "status", kind: "select", selectItems: [{ value: "draft" }, { value: "published" }] }
-            ]
-          }
-        }
-      ]
+              {
+                fieldId: "status",
+                kind: "select",
+                selectItems: [{ value: "draft" }, { value: "published" }],
+              },
+            ],
+          },
+        },
+      ],
     });
 
     expect(generated.endpointCount).toBe(1);
@@ -31,7 +35,7 @@ describe("schema type generation", () => {
 
   it("returns warnings for entries without fields", () => {
     const generated = generateTypesFromSchema({
-      apis: [{ endpoint: "empty", api: {} }]
+      apis: [{ endpoint: "empty", api: {} }],
     });
 
     expect(generated.endpointCount).toBe(1);
