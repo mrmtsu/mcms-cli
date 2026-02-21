@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.2] - 2026-02-21
 
+### Added
+- `media list` command for listing media assets via the Management API.
+
 ### Changed
 - Added `oxlint` / `oxfmt` based `lint` and `format:check` workflows for development and CI.
 - CI now runs `lint` and `format:check` before `typecheck`, `test`, and `build`.
