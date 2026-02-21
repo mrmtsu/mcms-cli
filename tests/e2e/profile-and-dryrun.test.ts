@@ -11,7 +11,7 @@ describe("profile and dry-run flows", () => {
     const addResult = runCli(
       ["auth", "profile", "add", "work", "--service-domain", "example", "--json"],
       {},
-      { configRoot }
+      { configRoot },
     );
     expect(addResult.code).toBe(0);
 
@@ -37,20 +37,20 @@ describe("profile and dry-run flows", () => {
             notes: {
               "1": { title: "n1" },
               "2": { title: "n2" },
-              "3": { title: "n3" }
-            }
-          }
+              "3": { title: "n3" },
+            },
+          },
         },
         null,
-        2
+        2,
       ),
-      "utf8"
+      "utf8",
     );
 
     const env = {
       MICROCMS_SERVICE_DOMAIN: "mock",
       MICROCMS_API_KEY: "mock-key",
-      MICROCMS_CONTENT_MOCK_FILE: mockStorePath
+      MICROCMS_CONTENT_MOCK_FILE: mockStorePath,
     };
     const result = runCli(["content", "list", "notes", "--all", "--limit", "2", "--json"], env);
     expect(result.code).toBe(0);
@@ -67,11 +67,28 @@ describe("profile and dry-run flows", () => {
     writeFileSync(payloadPath, JSON.stringify({ title: "dry" }), "utf8");
     writeFileSync(mediaPath, "fake-image-bytes", "utf8");
 
-    const createResult = runCli(["content", "create", "notes", "--file", payloadPath, "--dry-run", "--json"]);
+    const createResult = runCli([
+      "content",
+      "create",
+      "notes",
+      "--file",
+      payloadPath,
+      "--dry-run",
+      "--json",
+    ]);
     expect(createResult.code).toBe(0);
     expect(JSON.parse(createResult.stdout).data.operation).toBe("content.create");
 
-    const updateResult = runCli(["content", "update", "notes", "id-1", "--file", payloadPath, "--dry-run", "--json"]);
+    const updateResult = runCli([
+      "content",
+      "update",
+      "notes",
+      "id-1",
+      "--file",
+      payloadPath,
+      "--dry-run",
+      "--json",
+    ]);
     expect(updateResult.code).toBe(0);
     expect(JSON.parse(updateResult.stdout).data.operation).toBe("content.update");
 
@@ -86,20 +103,44 @@ describe("profile and dry-run flows", () => {
     expect(mediaBody.data.size).toBeGreaterThan(0);
   });
 
+  it("validates media list options before network calls", () => {
+    const result = runCli(["media", "list", "--limit", "abc", "--json"]);
+    expect(result.code).toBe(2);
+    expect(JSON.parse(result.stderr).error.code).toBe("INVALID_INPUT");
+  });
+
   it("does not change default profile during auth login with --profile", () => {
     const configRoot = mkdtempSync(join(tmpdir(), "microcms-cli-login-profile-"));
 
     const addDefaultResult = runCli(
-      ["auth", "profile", "add", "default", "--service-domain", "example", "--set-default", "--json"],
+      [
+        "auth",
+        "profile",
+        "add",
+        "default",
+        "--service-domain",
+        "example",
+        "--set-default",
+        "--json",
+      ],
       {},
-      { configRoot }
+      { configRoot },
     );
     expect(addDefaultResult.code).toBe(0);
 
     const loginResult = runCli(
-      ["auth", "login", "--profile", "work", "--service-domain", "example-work", "--api-key-stdin", "--json"],
+      [
+        "auth",
+        "login",
+        "--profile",
+        "work",
+        "--service-domain",
+        "example-work",
+        "--api-key-stdin",
+        "--json",
+      ],
       {},
-      { configRoot, stdin: "dummy-key\n" }
+      { configRoot, stdin: "dummy-key\n" },
     );
     expect(loginResult.code).toBe(0);
 
@@ -110,8 +151,8 @@ describe("profile and dry-run flows", () => {
     expect(body.data.profiles).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: "default", isDefault: true }),
-        expect.objectContaining({ name: "work", isDefault: false })
-      ])
+        expect.objectContaining({ name: "work", isDefault: false }),
+      ]),
     );
   });
 });

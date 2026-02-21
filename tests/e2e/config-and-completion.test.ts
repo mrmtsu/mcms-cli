@@ -1,4 +1,12 @@
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -13,7 +21,7 @@ describe("config doctor and completion commands", () => {
       "example",
       "--api-key",
       "plain-secret",
-      "--json"
+      "--json",
     ]);
 
     expect(result.code).toBe(0);
@@ -27,7 +35,7 @@ describe("config doctor and completion commands", () => {
     const home = mkdtempSync(join(tmpdir(), "microcms-cli-home-"));
     const env = {
       HOME: home,
-      USERPROFILE: home
+      USERPROFILE: home,
     };
 
     const installResult = runCli(["completion", "install", "bash", "--json"], env);
@@ -37,6 +45,7 @@ describe("config doctor and completion commands", () => {
     const targetPath = installBody.data.path as string;
     expect(targetPath).toContain("bash-completion");
     expect(existsSync(targetPath)).toBe(true);
+    expect(readFileSync(targetPath, "utf8")).toContain('compgen -W "list upload"');
 
     const uninstallResult = runCli(["completion", "uninstall", "--json"], env);
     expect(uninstallResult.code).toBe(0);
@@ -47,7 +56,7 @@ describe("config doctor and completion commands", () => {
     const home = mkdtempSync(join(tmpdir(), "microcms-cli-home-link-"));
     const env = {
       HOME: home,
-      USERPROFILE: home
+      USERPROFILE: home,
     };
 
     const targetPath = join(home, ".local", "share", "bash-completion", "completions", "microcms");
@@ -68,7 +77,7 @@ describe("config doctor and completion commands", () => {
     const home = mkdtempSync(join(tmpdir(), "microcms-cli-home-unlink-"));
     const env = {
       HOME: home,
-      USERPROFILE: home
+      USERPROFILE: home,
     };
 
     const targetPath = join(home, ".local", "share", "bash-completion", "completions", "microcms");

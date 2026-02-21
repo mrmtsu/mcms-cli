@@ -70,6 +70,9 @@ microcms content create <endpoint> --file payload.json --dry-run --json
 microcms content update <endpoint> <id> --file payload.json --json
 microcms content delete <endpoint> <id> --json
 
+microcms media list --json
+microcms media list --limit 20 --image-only --file-name logo --json
+microcms media list --token <token> --json
 microcms media upload <path> --json
 microcms media upload <path> --dry-run --json
 microcms validate <endpoint> --file payload.json --json
@@ -160,13 +163,16 @@ Error:
 
 ```bash
 npm install
+npm run lint
+npm run format:check
+npm run typecheck
 npm run test
 npm run build
 ```
 
 ## 補足
 
-- `api list/info` と `media upload` は microCMS Management API を利用します。
+- `api list/info` と `media list/upload` は microCMS Management API を利用します。
 - Management API base URL のデフォルト: `https://<serviceDomain>.microcms-management.io`
 - `MICROCMS_MANAGEMENT_API_BASE_URL` で上書き可能です。
 - Content API base URL: `https://<serviceDomain>.microcms.io`

@@ -25,7 +25,7 @@ const GLOBAL_OPTIONS = [
   "--retry",
   "--retry-max-delay",
   "--verbose",
-  "--no-color"
+  "--no-color",
 ];
 
 export function registerCompletionCommands(program: Command): void {
@@ -51,7 +51,7 @@ export function registerCompletionCommands(program: Command): void {
         installed: true,
         shell,
         path: targetPath,
-        reloadHint: getReloadHint(shell)
+        reloadHint: getReloadHint(shell),
       });
     });
 
@@ -74,7 +74,7 @@ export function registerCompletionCommands(program: Command): void {
           throw new CliError({
             code: "INVALID_INPUT",
             message: `Refusing to uninstall completion because target is a symbolic link: ${path}`,
-            exitCode: EXIT_CODE.INVALID_INPUT
+            exitCode: EXIT_CODE.INVALID_INPUT,
           });
         }
 
@@ -82,7 +82,7 @@ export function registerCompletionCommands(program: Command): void {
           throw new CliError({
             code: "INVALID_INPUT",
             message: `Refusing to uninstall completion because target is not a regular file: ${path}`,
-            exitCode: EXIT_CODE.INVALID_INPUT
+            exitCode: EXIT_CODE.INVALID_INPUT,
           });
         }
 
@@ -92,7 +92,7 @@ export function registerCompletionCommands(program: Command): void {
 
       printSuccess(ctx, {
         uninstalled: true,
-        removed
+        removed,
       });
     });
 
@@ -125,7 +125,7 @@ function parseShell(value: string | undefined): SupportedShell {
     throw new CliError({
       code: "INVALID_INPUT",
       message: "Shell is required: bash|zsh|fish",
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -134,7 +134,7 @@ function parseShell(value: string | undefined): SupportedShell {
     throw new CliError({
       code: "INVALID_INPUT",
       message: `Unsupported shell: ${value}. Choose bash, zsh, or fish.`,
-      exitCode: EXIT_CODE.INVALID_INPUT
+      exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }
 
@@ -185,7 +185,12 @@ function getReloadHint(shell: SupportedShell): string {
 }
 
 function isExpectedCompletionFailure(code: string): boolean {
-  return code === "AUTH_FAILED" || code === "FORBIDDEN" || code === "NETWORK_ERROR" || code === "INVALID_INPUT";
+  return (
+    code === "AUTH_FAILED" ||
+    code === "FORBIDDEN" ||
+    code === "NETWORK_ERROR" ||
+    code === "INVALID_INPUT"
+  );
 }
 
 type PathState = "missing" | "file" | "symlink" | "other";
@@ -199,7 +204,7 @@ async function assertSafeCompletionTargetForWrite(path: string): Promise<void> {
   throw new CliError({
     code: "INVALID_INPUT",
     message: `Refusing to write completion because target is a symbolic link: ${path}`,
-    exitCode: EXIT_CODE.INVALID_INPUT
+    exitCode: EXIT_CODE.INVALID_INPUT,
   });
 }
 
@@ -225,7 +230,9 @@ async function getPathState(path: string): Promise<PathState> {
 }
 
 function isNoEntryError(error: unknown): boolean {
-  return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "ENOENT";
+  return (
+    typeof error === "object" && error !== null && (error as { code?: unknown }).code === "ENOENT"
+  );
 }
 
 function buildCompletionScript(shell: SupportedShell): string {
@@ -283,7 +290,7 @@ _microcms_complete() {
       COMPREPLY=( $(compgen -W "list get" -- "$cur") )
       ;;
     media)
-      COMPREPLY=( $(compgen -W "upload" -- "$cur") )
+      COMPREPLY=( $(compgen -W "list upload" -- "$cur") )
       ;;
     config)
       COMPREPLY=( $(compgen -W "doctor" -- "$cur") )
@@ -377,7 +384,7 @@ _microcms() {
           _values 'docs command' list get
           ;;
         media)
-          _values 'media command' upload
+          _values 'media command' list upload
           ;;
         config)
           _values 'config command' doctor
@@ -422,7 +429,7 @@ complete -c microcms -n '__fish_seen_subcommand_from auth' -a 'login status prof
 complete -c microcms -n '__fish_seen_subcommand_from api' -a 'list info'
 complete -c microcms -n '__fish_seen_subcommand_from content' -a 'list get create update delete'
 complete -c microcms -n '__fish_seen_subcommand_from docs' -a 'list get'
-complete -c microcms -n '__fish_seen_subcommand_from media' -a 'upload'
+complete -c microcms -n '__fish_seen_subcommand_from media' -a 'list upload'
 complete -c microcms -n '__fish_seen_subcommand_from config' -a 'doctor'
 complete -c microcms -n '__fish_seen_subcommand_from schema' -a 'pull'
 complete -c microcms -n '__fish_seen_subcommand_from types' -a 'generate'
