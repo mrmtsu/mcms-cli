@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-21
+
 ### Added
 - `docs list` command for official documentation metadata lookup.
 - `docs get` command for official documentation markdown retrieval (MCP source).
