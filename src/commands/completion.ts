@@ -283,7 +283,7 @@ _microcms_complete() {
       if [[ \${COMP_CWORD} -eq 3 ]]; then
         COMPREPLY=( $(compgen -W "$( _microcms_endpoint_candidates )" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "list get create update delete meta status" -- "$cur") )
+        COMPREPLY=( $(compgen -W "list get create update delete meta status created-by" -- "$cur") )
       fi
       ;;
     docs)
@@ -381,7 +381,7 @@ _microcms() {
           _values 'api command' list info
           ;;
         content)
-          _values 'content command' list get create update delete meta status
+          _values 'content command' list get create update delete meta status created-by
           ;;
         docs)
           _values 'docs command' list get
@@ -433,7 +433,7 @@ complete -c microcms -n '__fish_use_subcommand' -a 'api auth config completion c
 
 complete -c microcms -n '__fish_seen_subcommand_from auth' -a 'login status profile'
 complete -c microcms -n '__fish_seen_subcommand_from api' -a 'list info'
-complete -c microcms -n '__fish_seen_subcommand_from content' -a 'list get create update delete meta status'
+complete -c microcms -n '__fish_seen_subcommand_from content' -a 'list get create update delete meta status created-by'
 complete -c microcms -n '__fish_seen_subcommand_from docs' -a 'list get'
 complete -c microcms -n '__fish_seen_subcommand_from media' -a 'list upload delete'
 complete -c microcms -n '__fish_seen_subcommand_from member' -a 'get'

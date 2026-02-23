@@ -53,6 +53,11 @@ describe("docs/search/spec contract", () => {
     ).toBe(true);
     expect(
       (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "content created-by set",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
         (command) => command.path === "media delete",
       ),
     ).toBe(true);

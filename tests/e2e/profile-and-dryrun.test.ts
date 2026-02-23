@@ -110,6 +110,20 @@ describe("profile and dry-run flows", () => {
     expect(statusResult.code).toBe(0);
     expect(JSON.parse(statusResult.stdout).data.operation).toBe("content.status.set");
 
+    const createdByResult = runCli([
+      "content",
+      "created-by",
+      "set",
+      "notes",
+      "id-1",
+      "--member",
+      "member-1",
+      "--dry-run",
+      "--json",
+    ]);
+    expect(createdByResult.code).toBe(0);
+    expect(JSON.parse(createdByResult.stdout).data.operation).toBe("content.created-by.set");
+
     const mediaResult = runCli(["media", "upload", mediaPath, "--dry-run", "--json"]);
     expect(mediaResult.code).toBe(0);
     const mediaBody = JSON.parse(mediaResult.stdout);

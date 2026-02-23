@@ -181,6 +181,35 @@ export async function patchContentStatus(
   return { data: result.data, requestId: result.requestId };
 }
 
+export async function patchContentCreatedBy(
+  ctx: RuntimeContext,
+  endpoint: string,
+  contentId: string,
+  memberId: string,
+): Promise<{ data: unknown; requestId: string | null }> {
+  assertAuth(ctx);
+  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), [
+    "contents",
+    endpoint,
+    contentId,
+    "createdBy",
+  ]);
+  const result = await requestJson<unknown>({
+    url,
+    method: "PATCH",
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+    body: {
+      createdBy: memberId,
+    },
+  });
+
+  return { data: result.data, requestId: result.requestId };
+}
+
 export async function createContent(
   ctx: RuntimeContext,
   endpoint: string,

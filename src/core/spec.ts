@@ -244,6 +244,13 @@ const COMMANDS: CommandSpec[] = [
     readOnly: false,
   },
   {
+    path: "content created-by set",
+    description: "set content creator via management API",
+    args: ["<endpoint>", "<id>"],
+    options: ["--member <memberId>", "--dry-run"],
+    readOnly: false,
+  },
+  {
     path: "media list",
     description: "list media",
     args: [],

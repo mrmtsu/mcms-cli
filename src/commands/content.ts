@@ -6,6 +6,7 @@ import {
   getContent,
   listContentMeta,
   listContent,
+  patchContentCreatedBy,
   patchContentStatus,
   updateContent,
 } from "../core/client.js";
@@ -36,6 +37,11 @@ type MetaListOptions = {
 
 type StatusSetOptions = {
   status: string;
+  dryRun?: boolean;
+};
+
+type CreatedBySetOptions = {
+  member: string;
   dryRun?: boolean;
 };
 
@@ -249,6 +255,39 @@ export function registerContentCommands(program: Command): void {
       const result = await patchContentStatus(ctx, endpoint, id, normalizedStatus);
       printSuccess(ctx, result.data, result.requestId);
     });
+
+  const createdBy = content
+    .command("created-by")
+    .description("Management API content creator operations");
+
+  createdBy
+    .command("set")
+    .argument("<endpoint>", "API endpoint")
+    .argument("<id>", "Content ID")
+    .requiredOption("--member <memberId>", "Target member ID")
+    .option("--dry-run", "show operation without sending request")
+    .action(async (...actionArgs: unknown[]) => {
+      const endpoint = actionArgs[0] as string;
+      const id = actionArgs[1] as string;
+      const options = actionArgs[2] as CreatedBySetOptions;
+      const command = getActionCommand(actionArgs);
+      const ctx = await contextFromCommand(command);
+      const memberId = parseCreatedByMemberId(options.member);
+
+      if (options.dryRun) {
+        printSuccess(ctx, {
+          dryRun: true,
+          operation: "content.created-by.set",
+          endpoint,
+          id,
+          memberId,
+        });
+        return;
+      }
+
+      const result = await patchContentCreatedBy(ctx, endpoint, id, memberId);
+      printSuccess(ctx, result.data, result.requestId);
+    });
 }
 
 function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
@@ -345,6 +384,19 @@ function parseContentStatus(value: string): "PUBLISH" | "DRAFT" {
   throw new CliError({
     code: "INVALID_INPUT",
     message: `Invalid status: ${value}. Expected PUBLISH or DRAFT.`,
+    exitCode: EXIT_CODE.INVALID_INPUT,
+  });
+}
+
+function parseCreatedByMemberId(value: string): string {
+  const memberId = value.trim();
+  if (memberId.length > 0) {
+    return memberId;
+  }
+
+  throw new CliError({
+    code: "INVALID_INPUT",
+    message: "Invalid member ID: value is empty.",
     exitCode: EXIT_CODE.INVALID_INPUT,
   });
 }

@@ -14,6 +14,7 @@ describe("cli spec", () => {
     expect(spec.commands.some((command) => command.path === "content meta list")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content meta get")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content status set")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "content created-by set")).toBe(true);
     expect(spec.commands.some((command) => command.path === "media list")).toBe(true);
     expect(spec.commands.some((command) => command.path === "media delete")).toBe(true);
     expect(spec.commands.some((command) => command.path === "search")).toBe(true);
