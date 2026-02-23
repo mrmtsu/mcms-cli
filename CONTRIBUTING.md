@@ -9,13 +9,9 @@ Thanks for contributing to `mcms-cli`.
    ```bash
    npm install
    ```
-3. Run tests and type checks:
+3. Run the same checks as CI:
    ```bash
-   npm run lint
-   npm run format:check
-   npm run typecheck
-   npm test
-   npm run build
+   npm run check:ci
    ```
 
 ## Branch / PR Flow
