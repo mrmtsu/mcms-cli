@@ -315,6 +315,24 @@ export async function getApiInfo(
   return { data: result.data, requestId: result.requestId };
 }
 
+export async function getMember(
+  ctx: RuntimeContext,
+  memberId: string,
+): Promise<{ data: unknown; requestId: string | null }> {
+  assertAuth(ctx);
+  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), ["members", memberId]);
+  const result = await requestJson<unknown>({
+    url,
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+  });
+
+  return { data: result.data, requestId: result.requestId };
+}
+
 export async function listMedia(
   ctx: RuntimeContext,
   queries?: Record<string, unknown>,

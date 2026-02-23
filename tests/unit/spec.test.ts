@@ -10,6 +10,7 @@ describe("cli spec", () => {
     expect(spec.exitCodes.INVALID_INPUT).toBe(2);
     expect(spec.commands.some((command) => command.path === "docs list")).toBe(true);
     expect(spec.commands.some((command) => command.path === "docs get")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "member get")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content meta list")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content meta get")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content status set")).toBe(true);

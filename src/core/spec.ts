@@ -142,6 +142,13 @@ const COMMANDS: CommandSpec[] = [
     readOnly: true,
   },
   {
+    path: "member get",
+    description: "get member details by id",
+    args: ["<memberId>"],
+    options: [],
+    readOnly: true,
+  },
+  {
     path: "config doctor",
     description: "show resolved auth/config sources and common risks",
     args: [],

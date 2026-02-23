@@ -8,6 +8,7 @@ import { registerConfigCommands } from "./commands/config.js";
 import { registerContentCommands } from "./commands/content.js";
 import { registerDocsCommands } from "./commands/docs.js";
 import { registerMediaCommands } from "./commands/media.js";
+import { registerMemberCommands } from "./commands/member.js";
 import { registerSearchCommand } from "./commands/search.js";
 import { registerSchemaCommands } from "./commands/schema.js";
 import { registerSpecCommand } from "./commands/spec.js";
@@ -84,6 +85,7 @@ async function main(argv: string[]): Promise<void> {
   registerContentCommands(program);
   registerDocsCommands(program);
   registerMediaCommands(program);
+  registerMemberCommands(program);
   registerSearchCommand(program);
   registerSchemaCommands(program);
   registerSpecCommand(program);

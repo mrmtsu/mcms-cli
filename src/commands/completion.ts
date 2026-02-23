@@ -260,7 +260,7 @@ _microcms_complete() {
   command="\${COMP_WORDS[1]}"
   subcmd="\${COMP_WORDS[2]}"
 
-  local roots="api auth config completion content docs media schema search spec types validate help"
+  local roots="api auth config completion content docs media member schema search spec types validate help"
   local globals="${globals}"
 
   if [[ \${COMP_CWORD} -eq 1 ]]; then
@@ -291,6 +291,9 @@ _microcms_complete() {
       ;;
     media)
       COMPREPLY=( $(compgen -W "list upload delete" -- "$cur") )
+      ;;
+    member)
+      COMPREPLY=( $(compgen -W "get" -- "$cur") )
       ;;
     config)
       COMPREPLY=( $(compgen -W "doctor" -- "$cur") )
@@ -342,7 +345,7 @@ _microcms_endpoints() {
 
 _microcms() {
   local -a roots
-  roots=(api auth config completion content docs media schema search spec types validate)
+  roots=(api auth config completion content docs media member schema search spec types validate)
   _arguments '*::arg:->args'
 
   case $state in
@@ -386,6 +389,9 @@ _microcms() {
         media)
           _values 'media command' list upload delete
           ;;
+        member)
+          _values 'member command' get
+          ;;
         config)
           _values 'config command' doctor
           ;;
@@ -423,13 +429,14 @@ function buildFishCompletionScript(): string {
   return `# microcms completion for fish
 complete -c microcms -f
 
-complete -c microcms -n '__fish_use_subcommand' -a 'api auth config completion content docs media schema search spec types validate'
+complete -c microcms -n '__fish_use_subcommand' -a 'api auth config completion content docs media member schema search spec types validate'
 
 complete -c microcms -n '__fish_seen_subcommand_from auth' -a 'login status profile'
 complete -c microcms -n '__fish_seen_subcommand_from api' -a 'list info'
 complete -c microcms -n '__fish_seen_subcommand_from content' -a 'list get create update delete meta status'
 complete -c microcms -n '__fish_seen_subcommand_from docs' -a 'list get'
 complete -c microcms -n '__fish_seen_subcommand_from media' -a 'list upload delete'
+complete -c microcms -n '__fish_seen_subcommand_from member' -a 'get'
 complete -c microcms -n '__fish_seen_subcommand_from config' -a 'doctor'
 complete -c microcms -n '__fish_seen_subcommand_from schema' -a 'pull'
 complete -c microcms -n '__fish_seen_subcommand_from types' -a 'generate'

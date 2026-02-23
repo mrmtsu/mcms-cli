@@ -75,6 +75,7 @@ Resolution order for service domain:
 ```bash
 microcms api list --json
 microcms api info <endpoint> --json
+microcms member get <memberId> --json
 
 microcms content list <endpoint> --json
 microcms content list <endpoint> --all --json
