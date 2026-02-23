@@ -71,16 +71,7 @@ describe("security and input hardening", () => {
 
   it("rejects invalid content status value", () => {
     const result = runCli(
-      [
-        "content",
-        "status",
-        "set",
-        "notes",
-        "id-1",
-        "--status",
-        "CLOSED",
-        "--json",
-      ],
+      ["content", "status", "set", "notes", "id-1", "--status", "CLOSED", "--json"],
       {},
     );
 
@@ -101,16 +92,7 @@ describe("security and input hardening", () => {
 
   it("rejects empty member id for content created-by set", () => {
     const result = runCli(
-      [
-        "content",
-        "created-by",
-        "set",
-        "notes",
-        "id-1",
-        "--member",
-        "   ",
-        "--json",
-      ],
+      ["content", "created-by", "set", "notes", "id-1", "--member", "   ", "--json"],
       {},
     );
 

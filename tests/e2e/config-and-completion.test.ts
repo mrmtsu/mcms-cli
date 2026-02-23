@@ -46,7 +46,9 @@ describe("config doctor and completion commands", () => {
     expect(targetPath).toContain("bash-completion");
     expect(existsSync(targetPath)).toBe(true);
     const script = readFileSync(targetPath, "utf8");
-    expect(script).toContain('local roots="api auth config completion content docs media member schema search spec types validate help"');
+    expect(script).toContain(
+      'local roots="api auth config completion content docs media member schema search spec types validate help"',
+    );
     expect(script).toContain('compgen -W "list get create update delete meta status created-by"');
     expect(script).toContain('compgen -W "list upload delete"');
     expect(script).toContain('compgen -W "get"');
