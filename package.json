@@ -1,8 +1,26 @@
 {
   "name": "@mrmtsu/mcms-cli",
-  "version": "0.2.2",
-  "description": "AI/CI friendly CLI for microCMS",
+  "version": "0.2.3",
+  "description": "Unofficial microCMS CLI for Content API and Management API automation (AI/CI friendly)",
   "license": "MIT",
+  "homepage": "https://github.com/mrmtsu/mcms-cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrmtsu/mcms-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mrmtsu/mcms-cli/issues"
+  },
+  "keywords": [
+    "microcms",
+    "microcms-cli",
+    "cli",
+    "headless-cms",
+    "content-api",
+    "management-api",
+    "ai-agent",
+    "ci"
+  ],
   "type": "module",
   "bin": {
     "microcms": "dist/cli.js"

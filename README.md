@@ -24,6 +24,20 @@ npm i -g @mrmtsu/mcms-cli
 npx @mrmtsu/mcms-cli --help
 ```
 
+## FAQ
+
+### Is this the official microCMS CLI?
+
+No. This is an unofficial community project and is not affiliated with microCMS.
+
+### How do I install it quickly?
+
+Use `npm i -g @mrmtsu/mcms-cli` and run `microcms --help`.
+
+### Why are there different names (`mcms-cli`, `@mrmtsu/mcms-cli`, `microcms`)?
+
+`mcms-cli` is the repository/storage identifier, `@mrmtsu/mcms-cli` is the npm package, and `microcms` is the command for readability.
+
 ## Auth
 
 This MVP uses API keys (not OAuth).

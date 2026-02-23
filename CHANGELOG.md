@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-02-23
+
+### Changed
+- Improved package discoverability metadata in `package.json` (description, keywords, homepage/repository/bugs).
+- Refined README/README.ja headings and intro blocks for clearer project naming and onboarding.
+- Added FAQ sections in both READMEs with direct answers for official/unofficial status, install path, and naming differences.
+
 ## [0.2.2] - 2026-02-21
 
 ### Added

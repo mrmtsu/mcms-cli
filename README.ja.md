@@ -24,6 +24,20 @@ npm i -g @mrmtsu/mcms-cli
 npx @mrmtsu/mcms-cli --help
 ```
 
+## FAQ
+
+### これは microCMS 公式の CLI ですか？
+
+いいえ。これは非公式のコミュニティ製プロジェクトで、microCMS 公式とは無関係です。
+
+### 最短でインストールするには？
+
+`npm i -g @mrmtsu/mcms-cli` を実行し、`microcms --help` で確認できます。
+
+### `mcms-cli` / `@mrmtsu/mcms-cli` / `microcms` の違いは？
+
+`mcms-cli` はリポジトリ/ローカル識別子、`@mrmtsu/mcms-cli` は npm パッケージ名、`microcms` は実行コマンド名です。
+
 ## 認証
 
 現状は API キー認証のみです（OAuth は未対応）。
