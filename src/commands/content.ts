@@ -6,6 +6,7 @@ import {
   getContent,
   listContentMeta,
   listContent,
+  patchContentStatus,
   updateContent,
 } from "../core/client.js";
 import type { RuntimeContext } from "../core/context.js";
@@ -31,6 +32,11 @@ type ListOptions = {
 type MetaListOptions = {
   limit?: string;
   offset?: string;
+};
+
+type StatusSetOptions = {
+  status: string;
+  dryRun?: boolean;
 };
 
 export function registerContentCommands(program: Command): void {
@@ -212,6 +218,37 @@ export function registerContentCommands(program: Command): void {
       const result = await getContentMeta(ctx, endpoint, id);
       printSuccess(ctx, result.data, result.requestId);
     });
+
+  const status = content.command("status").description("Management API content status operations");
+
+  status
+    .command("set")
+    .argument("<endpoint>", "API endpoint")
+    .argument("<id>", "Content ID")
+    .requiredOption("--status <status>", "Target status: PUBLISH|DRAFT")
+    .option("--dry-run", "show operation without sending request")
+    .action(async (...actionArgs: unknown[]) => {
+      const endpoint = actionArgs[0] as string;
+      const id = actionArgs[1] as string;
+      const options = actionArgs[2] as StatusSetOptions;
+      const command = getActionCommand(actionArgs);
+      const ctx = await contextFromCommand(command);
+      const normalizedStatus = parseContentStatus(options.status);
+
+      if (options.dryRun) {
+        printSuccess(ctx, {
+          dryRun: true,
+          operation: "content.status.set",
+          endpoint,
+          id,
+          status: normalizedStatus,
+        });
+        return;
+      }
+
+      const result = await patchContentStatus(ctx, endpoint, id, normalizedStatus);
+      printSuccess(ctx, result.data, result.requestId);
+    });
 }
 
 function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
@@ -297,4 +334,17 @@ function parseListShape(data: unknown): {
     contents: candidate.contents,
     totalCount: candidate.totalCount,
   };
+}
+
+function parseContentStatus(value: string): "PUBLISH" | "DRAFT" {
+  const normalized = value.trim().toUpperCase();
+  if (normalized === "PUBLISH" || normalized === "DRAFT") {
+    return normalized;
+  }
+
+  throw new CliError({
+    code: "INVALID_INPUT",
+    message: `Invalid status: ${value}. Expected PUBLISH or DRAFT.`,
+    exitCode: EXIT_CODE.INVALID_INPUT,
+  });
 }

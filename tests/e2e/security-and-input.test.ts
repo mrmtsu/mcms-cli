@@ -69,6 +69,27 @@ describe("security and input hardening", () => {
     expect(body.error.message).toContain("limit");
   });
 
+  it("rejects invalid content status value", () => {
+    const result = runCli(
+      [
+        "content",
+        "status",
+        "set",
+        "notes",
+        "id-1",
+        "--status",
+        "CLOSED",
+        "--json",
+      ],
+      {},
+    );
+
+    expect(result.code).toBe(2);
+    const body = JSON.parse(result.stderr);
+    expect(body.error.code).toBe("INVALID_INPUT");
+    expect(body.error.message).toContain("status");
+  });
+
   it("supports --api-key-stdin without exposing key", () => {
     const result = runCli(
       ["auth", "status", "--api-key-stdin", "--json"],

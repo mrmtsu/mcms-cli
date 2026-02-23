@@ -230,6 +230,13 @@ const COMMANDS: CommandSpec[] = [
     readOnly: true,
   },
   {
+    path: "content status set",
+    description: "set content status via management API",
+    args: ["<endpoint>", "<id>"],
+    options: ["--status <status>", "--dry-run"],
+    readOnly: false,
+  },
+  {
     path: "media list",
     description: "list media",
     args: [],
