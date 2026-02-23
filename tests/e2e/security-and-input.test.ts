@@ -90,6 +90,15 @@ describe("security and input hardening", () => {
     expect(body.error.message).toContain("status");
   });
 
+  it("rejects invalid media delete url", () => {
+    const result = runCli(["media", "delete", "--url", "not-a-url", "--json"]);
+
+    expect(result.code).toBe(2);
+    const body = JSON.parse(result.stderr);
+    expect(body.error.code).toBe("INVALID_INPUT");
+    expect(body.error.message).toContain("url");
+  });
+
   it("supports --api-key-stdin without exposing key", () => {
     const result = runCli(
       ["auth", "status", "--api-key-stdin", "--json"],

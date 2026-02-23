@@ -45,7 +45,7 @@ describe("config doctor and completion commands", () => {
     const targetPath = installBody.data.path as string;
     expect(targetPath).toContain("bash-completion");
     expect(existsSync(targetPath)).toBe(true);
-    expect(readFileSync(targetPath, "utf8")).toContain('compgen -W "list upload"');
+    expect(readFileSync(targetPath, "utf8")).toContain('compgen -W "list upload delete"');
 
     const uninstallResult = runCli(["completion", "uninstall", "--json"], env);
     expect(uninstallResult.code).toBe(0);

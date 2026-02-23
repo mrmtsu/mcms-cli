@@ -115,6 +115,18 @@ describe("profile and dry-run flows", () => {
     const mediaBody = JSON.parse(mediaResult.stdout);
     expect(mediaBody.data.operation).toBe("media.upload");
     expect(mediaBody.data.size).toBeGreaterThan(0);
+
+    const mediaDeleteResult = runCli([
+      "media",
+      "delete",
+      "--url",
+      "https://images.microcms-assets.io/assets/xxxxx/yyyyy/hoge.jpg",
+      "--dry-run",
+      "--json",
+    ]);
+    expect(mediaDeleteResult.code).toBe(0);
+    const mediaDeleteBody = JSON.parse(mediaDeleteResult.stdout);
+    expect(mediaDeleteBody.data.operation).toBe("media.delete");
   });
 
   it("validates media list options before network calls", () => {

@@ -1,6 +1,6 @@
 import { stat } from "node:fs/promises";
 import { Command } from "commander";
-import { listMedia, uploadMedia } from "../core/client.js";
+import { deleteMedia, listMedia, uploadMedia } from "../core/client.js";
 import { CliError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
 import { printSuccess } from "../core/output.js";
@@ -11,6 +11,11 @@ type ListOptions = {
   imageOnly?: boolean;
   fileName?: string;
   token?: string;
+};
+
+type DeleteOptions = {
+  url: string;
+  dryRun?: boolean;
 };
 
 export function registerMediaCommands(program: Command): void {
@@ -78,10 +83,56 @@ export function registerMediaCommands(program: Command): void {
       const result = await uploadMedia(ctx, path);
       printSuccess(ctx, result.data, result.requestId);
     });
+
+  media
+    .command("delete")
+    .requiredOption("--url <url>", "Media URL to delete")
+    .option("--dry-run", "show operation without sending request")
+    .action(async (...actionArgs: unknown[]) => {
+      const options = actionArgs[0] as DeleteOptions;
+      const command = getActionCommand(actionArgs);
+      const ctx = await contextFromCommand(command);
+      const url = parseMediaUrl(options.url);
+
+      if (options.dryRun) {
+        printSuccess(ctx, {
+          dryRun: true,
+          operation: "media.delete",
+          url,
+        });
+        return;
+      }
+
+      const result = await deleteMedia(ctx, url);
+      printSuccess(ctx, result.data, result.requestId);
+    });
 }
 
 function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(value).filter(([, item]) => item !== undefined),
   ) as Partial<T>;
+}
+
+function parseMediaUrl(value: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: `Invalid url: ${value}. Expected a valid http(s) URL.`,
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: `Invalid url: ${value}. Expected a valid http(s) URL.`,
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  return parsed.toString();
 }

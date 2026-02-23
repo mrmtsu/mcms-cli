@@ -251,6 +251,13 @@ const COMMANDS: CommandSpec[] = [
     readOnly: false,
   },
   {
+    path: "media delete",
+    description: "delete media by url",
+    args: [],
+    options: ["--url <url>", "--dry-run"],
+    readOnly: false,
+  },
+  {
     path: "schema pull",
     description: "fetch API schema metadata and save to file",
     args: [],

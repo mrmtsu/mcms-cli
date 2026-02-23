@@ -371,6 +371,27 @@ export async function uploadMedia(
   return { data: result.data, requestId: result.requestId };
 }
 
+export async function deleteMedia(
+  ctx: RuntimeContext,
+  mediaUrl: string,
+): Promise<{ data: unknown; requestId: string | null }> {
+  assertAuth(ctx);
+  const url = buildApiUrlWithVersion(getManagementBaseUrl(ctx.serviceDomain), "v2", ["media"], {
+    url: mediaUrl,
+  });
+  const result = await requestJson<unknown>({
+    url,
+    method: "DELETE",
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+  });
+
+  return { data: result.data, requestId: result.requestId };
+}
+
 function getManagementBaseUrl(serviceDomain: string): string {
   if (MANAGEMENT_BASE_URL_OVERRIDE) {
     return normalizeBaseUrlOverride(

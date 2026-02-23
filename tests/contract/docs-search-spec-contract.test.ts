@@ -46,5 +46,10 @@ describe("docs/search/spec contract", () => {
         (command) => command.path === "content status set",
       ),
     ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "media delete",
+      ),
+    ).toBe(true);
   });
 });

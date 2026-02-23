@@ -290,7 +290,7 @@ _microcms_complete() {
       COMPREPLY=( $(compgen -W "list get" -- "$cur") )
       ;;
     media)
-      COMPREPLY=( $(compgen -W "list upload" -- "$cur") )
+      COMPREPLY=( $(compgen -W "list upload delete" -- "$cur") )
       ;;
     config)
       COMPREPLY=( $(compgen -W "doctor" -- "$cur") )
@@ -384,7 +384,7 @@ _microcms() {
           _values 'docs command' list get
           ;;
         media)
-          _values 'media command' list upload
+          _values 'media command' list upload delete
           ;;
         config)
           _values 'config command' doctor
@@ -429,7 +429,7 @@ complete -c microcms -n '__fish_seen_subcommand_from auth' -a 'login status prof
 complete -c microcms -n '__fish_seen_subcommand_from api' -a 'list info'
 complete -c microcms -n '__fish_seen_subcommand_from content' -a 'list get create update delete meta status'
 complete -c microcms -n '__fish_seen_subcommand_from docs' -a 'list get'
-complete -c microcms -n '__fish_seen_subcommand_from media' -a 'list upload'
+complete -c microcms -n '__fish_seen_subcommand_from media' -a 'list upload delete'
 complete -c microcms -n '__fish_seen_subcommand_from config' -a 'doctor'
 complete -c microcms -n '__fish_seen_subcommand_from schema' -a 'pull'
 complete -c microcms -n '__fish_seen_subcommand_from types' -a 'generate'

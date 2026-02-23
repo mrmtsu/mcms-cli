@@ -92,6 +92,7 @@ microcms media list --limit 20 --image-only --file-name logo --json
 microcms media list --token <token> --json
 microcms media upload <path> --json
 microcms media upload <path> --dry-run --json
+microcms media delete --url <media-url> --json
 microcms validate <endpoint> --file payload.json --json
 microcms docs list --source auto --json
 microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
