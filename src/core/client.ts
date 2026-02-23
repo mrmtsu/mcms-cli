@@ -110,6 +110,48 @@ export async function getContent(
   return { data, requestId: null };
 }
 
+export async function listContentMeta(
+  ctx: RuntimeContext,
+  endpoint: string,
+  queries?: Record<string, unknown>,
+): Promise<{ data: unknown; requestId: string | null }> {
+  assertAuth(ctx);
+  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), ["contents", endpoint], queries);
+  const result = await requestJson<unknown>({
+    url,
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+  });
+
+  return { data: result.data, requestId: result.requestId };
+}
+
+export async function getContentMeta(
+  ctx: RuntimeContext,
+  endpoint: string,
+  contentId: string,
+): Promise<{ data: unknown; requestId: string | null }> {
+  assertAuth(ctx);
+  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), [
+    "contents",
+    endpoint,
+    contentId,
+  ]);
+  const result = await requestJson<unknown>({
+    url,
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+  });
+
+  return { data: result.data, requestId: result.requestId };
+}
+
 export async function createContent(
   ctx: RuntimeContext,
   endpoint: string,

@@ -216,6 +216,20 @@ const COMMANDS: CommandSpec[] = [
     readOnly: false,
   },
   {
+    path: "content meta list",
+    description: "list content metadata from management API",
+    args: ["<endpoint>"],
+    options: ["--limit <limit>", "--offset <offset>"],
+    readOnly: true,
+  },
+  {
+    path: "content meta get",
+    description: "get content metadata by id from management API",
+    args: ["<endpoint>", "<id>"],
+    options: [],
+    readOnly: true,
+  },
+  {
     path: "media list",
     description: "list media",
     args: [],

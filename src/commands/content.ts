@@ -2,7 +2,9 @@ import { Command } from "commander";
 import {
   createContent,
   deleteContent,
+  getContentMeta,
   getContent,
+  listContentMeta,
   listContent,
   updateContent,
 } from "../core/client.js";
@@ -24,6 +26,11 @@ type ListOptions = {
   depth?: string;
   draftKey?: string;
   all?: boolean;
+};
+
+type MetaListOptions = {
+  limit?: string;
+  offset?: string;
 };
 
 export function registerContentCommands(program: Command): void {
@@ -170,6 +177,40 @@ export function registerContentCommands(program: Command): void {
               deleted: true,
             };
       printSuccess(ctx, data, result.requestId);
+    });
+
+  const meta = content.command("meta").description("Management API content metadata operations");
+
+  meta
+    .command("list")
+    .argument("<endpoint>", "API endpoint")
+    .option("--limit <limit>")
+    .option("--offset <offset>")
+    .action(async (...actionArgs: unknown[]) => {
+      const endpoint = actionArgs[0] as string;
+      const options = actionArgs[1] as MetaListOptions;
+      const command = getActionCommand(actionArgs);
+      const ctx = await contextFromCommand(command);
+      const queries = compactObject({
+        limit: parseIntegerOption("limit", options.limit, { min: 1, max: 100 }),
+        offset: parseIntegerOption("offset", options.offset, { min: 0, max: 100000 }),
+      });
+
+      const result = await listContentMeta(ctx, endpoint, queries);
+      printSuccess(ctx, result.data, result.requestId);
+    });
+
+  meta
+    .command("get")
+    .argument("<endpoint>", "API endpoint")
+    .argument("<id>", "Content ID")
+    .action(async (...actionArgs: unknown[]) => {
+      const endpoint = actionArgs[0] as string;
+      const id = actionArgs[1] as string;
+      const command = getActionCommand(actionArgs);
+      const ctx = await contextFromCommand(command);
+      const result = await getContentMeta(ctx, endpoint, id);
+      printSuccess(ctx, result.data, result.requestId);
     });
 }
 

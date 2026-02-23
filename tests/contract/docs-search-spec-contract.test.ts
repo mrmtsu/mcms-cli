@@ -31,5 +31,15 @@ describe("docs/search/spec contract", () => {
     expect(specBody.ok).toBe(true);
     expect(specBody.meta.version).toBe("0.x");
     expect(specBody.data).toHaveProperty("commands");
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "content meta list",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "content meta get",
+      ),
+    ).toBe(true);
   });
 });

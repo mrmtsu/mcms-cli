@@ -79,6 +79,8 @@ microcms api info <endpoint> --json
 microcms content list <endpoint> --json
 microcms content list <endpoint> --all --json
 microcms content get <endpoint> <id> --json
+microcms content meta list <endpoint> --json
+microcms content meta get <endpoint> <id> --json
 microcms content create <endpoint> --file payload.json --json
 microcms content create <endpoint> --file payload.json --dry-run --json
 microcms content update <endpoint> <id> --file payload.json --json
