@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `content meta list` / `content meta get` commands for management metadata retrieval.
+- `content status set` command for management status transitions (`PUBLISH` / `DRAFT`).
+- `media delete` command for deleting media assets by URL via Management API v2.
+- `member get` command for retrieving member details via Management API.
+- `content created-by set` command for changing content creator via Management API.
+
+### Changed
+- Updated shell completion scripts to include new `content`, `media`, and `member` subcommands.
+- Expanded command specs and README command examples (English/Japanese) for the new management operations.
+
+### Tests
+- Added new unit tests for `content meta`, `content status`, `content created-by`, `media delete`, and `member get` client calls.
+- Expanded e2e/contract/spec tests to cover new command exposure, dry-run behavior, and input validation.
+
 ## [0.2.3] - 2026-02-23
 
 ### Changed

@@ -45,7 +45,11 @@ describe("config doctor and completion commands", () => {
     const targetPath = installBody.data.path as string;
     expect(targetPath).toContain("bash-completion");
     expect(existsSync(targetPath)).toBe(true);
-    expect(readFileSync(targetPath, "utf8")).toContain('compgen -W "list upload delete"');
+    const script = readFileSync(targetPath, "utf8");
+    expect(script).toContain('local roots="api auth config completion content docs media member schema search spec types validate help"');
+    expect(script).toContain('compgen -W "list get create update delete meta status created-by"');
+    expect(script).toContain('compgen -W "list upload delete"');
+    expect(script).toContain('compgen -W "get"');
 
     const uninstallResult = runCli(["completion", "uninstall", "--json"], env);
     expect(uninstallResult.code).toBe(0);
