@@ -44,17 +44,19 @@ npx @mrmtsu/mcms-cli --help
 
 ```bash
 # CI / 非対話実行の推奨:
-export MICROCMS_SERVICE_DOMAIN=<service>
-export MICROCMS_API_KEY=<key>
+export MICROCMS_SERVICE_DOMAIN=<service-domain>
+export MICROCMS_API_KEY=<api-key>
 
 # 任意: named profile
-microcms auth profile add work --service-domain <service> --set-default
+microcms auth profile add <profile-name> --service-domain <service-domain> --set-default
 microcms auth profile list --json
+# 注意: profile add は service domain のみ保存します。API キーは別途 login が必要です。
+printf '%s' '<api-key>' | microcms auth login --profile <profile-name> --api-key-stdin
 
 # キーチェーン保存:
-printf '%s' '<key>' | microcms auth login --service-domain <service> --api-key-stdin
+printf '%s' '<api-key>' | microcms auth login --service-domain <service-domain> --api-key-stdin
 # TTY 対話入力（非表示）:
-microcms auth login --service-domain <service> --prompt
+microcms auth login --service-domain <service-domain> --prompt
 microcms auth status --json
 ```
 

@@ -44,17 +44,19 @@ This MVP uses API keys (not OAuth).
 
 ```bash
 # Recommended for CI/non-interactive:
-export MICROCMS_SERVICE_DOMAIN=<service>
-export MICROCMS_API_KEY=<key>
+export MICROCMS_SERVICE_DOMAIN=<service-domain>
+export MICROCMS_API_KEY=<api-key>
 
 # Optional: use a named profile
-microcms auth profile add work --service-domain <service> --set-default
+microcms auth profile add <profile-name> --service-domain <service-domain> --set-default
 microcms auth profile list --json
+# Note: profile add only saves the service domain. Save API key separately via login.
+printf '%s' '<api-key>' | microcms auth login --profile <profile-name> --api-key-stdin
 
 # Or store key in keychain:
-printf '%s' '<key>' | microcms auth login --service-domain <service> --api-key-stdin
+printf '%s' '<api-key>' | microcms auth login --service-domain <service-domain> --api-key-stdin
 # Interactive TTY prompt (hidden input):
-microcms auth login --service-domain <service> --prompt
+microcms auth login --service-domain <service-domain> --prompt
 microcms auth status --json
 ```
 
