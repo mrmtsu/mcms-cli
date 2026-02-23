@@ -74,6 +74,8 @@ service domain 解決順:
 
 ## コマンド
 
+### API 操作
+
 ```bash
 microcms api list --json
 microcms api info <endpoint> --json
@@ -98,18 +100,38 @@ microcms media upload <path> --json
 microcms media upload <path> --dry-run --json
 microcms media delete --url <media-url> --json
 microcms validate <endpoint> --file payload.json --json
+```
+
+### ドキュメント / エージェント参照（APIキー・service domain不要）
+
+```bash
 microcms docs list --source auto --json
 microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
 microcms search "content list" --scope all --json
 microcms spec --json
+```
 
+- `docs get`: microCMS公式ドキュメント本文（Markdown）を取得します。
+- `search`: コマンド仕様とドキュメントのメタデータ（タイトル/ファイル名）を検索します。本文は返しません。
+
+### Schema / Types 補助
+
+```bash
 microcms schema pull --out microcms-schema.json --json
 microcms types generate --schema microcms-schema.json --out microcms-types.d.ts --json
+```
 
+### 設定と補完
+
+```bash
 microcms config doctor --json
 microcms completion install zsh --json
 microcms completion uninstall --json
+```
 
+### 認証プロファイル管理
+
+```bash
 microcms auth profile list --json
 microcms auth profile add <name> --service-domain <service> [--set-default] --json
 microcms auth profile use <name> --json
@@ -203,6 +225,7 @@ npm run build
 - `MICROCMS_*_BASE_URL` の override 先は localhost または microcms ドメインのみ許可します。
 - ドキュメント系コマンドは、同梱された `microcms-document-mcp-server` を既定で利用します（追加セットアップ不要）。
 - `docs` / `search` / `spec` は `MICROCMS_API_KEY` や `MICROCMS_SERVICE_DOMAIN` なしで実行できます。
+- `search` はコマンド仕様とドキュメントのメタデータ（タイトル/ファイル名）向けです。公式ドキュメント本文（Markdown）は `docs get` を使って取得してください。
 - 必要に応じて `MICROCMS_DOC_MCP_COMMAND` で実行コマンドを上書きできます。
 
 ## 免責事項

@@ -21,7 +21,9 @@ export function registerSearchCommand(program: Command): void {
   program
     .command("search")
     .argument("<query>", "search query")
-    .description("Search docs/spec for agent-friendly references (no API key required)")
+    .description(
+      "Search command/spec references and official doc titles (use docs get for full markdown; no API key required)",
+    )
     .option("--source <source>", "source strategy: auto|mcp|local", "auto")
     .option("--scope <scope>", "search scope: all|spec|docs", "all")
     .option("--category <name>", "optional docs category filter")

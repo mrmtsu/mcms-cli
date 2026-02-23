@@ -74,6 +74,8 @@ Resolution order for service domain:
 
 ## Commands
 
+### Core API operations
+
 ```bash
 microcms api list --json
 microcms api info <endpoint> --json
@@ -98,18 +100,38 @@ microcms media upload <path> --json
 microcms media upload <path> --dry-run --json
 microcms media delete --url <media-url> --json
 microcms validate <endpoint> --file payload.json --json
+```
+
+### Docs and Agent references (no API key / service domain required)
+
+```bash
 microcms docs list --source auto --json
 microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
 microcms search "content list" --scope all --json
 microcms spec --json
+```
 
+- `docs get`: fetch official microCMS documentation markdown content.
+- `search`: search command/spec references and docs metadata (titles/filenames), not full doc body.
+
+### Schema / Type helpers
+
+```bash
 microcms schema pull --out microcms-schema.json --json
 microcms types generate --schema microcms-schema.json --out microcms-types.d.ts --json
+```
 
+### Config and completion
+
+```bash
 microcms config doctor --json
 microcms completion install zsh --json
 microcms completion uninstall --json
+```
 
+### Auth profile management
+
+```bash
 microcms auth profile list --json
 microcms auth profile add <name> --service-domain <service> [--set-default] --json
 microcms auth profile use <name> --json
@@ -203,6 +225,7 @@ npm run build
 - `MICROCMS_*_BASE_URL` overrides only allow localhost or microcms domains.
 - Documentation commands use bundled `microcms-document-mcp-server` by default (no extra user setup required).
 - `docs`, `search`, and `spec` do not require `MICROCMS_API_KEY` / `MICROCMS_SERVICE_DOMAIN`.
+- `search` is for command/spec references and docs metadata (titles/filenames). Use `docs get` to read official documentation markdown content.
 - You can override the MCP executable path with `MICROCMS_DOC_MCP_COMMAND` when needed.
 
 ## Disclaimer

@@ -308,7 +308,8 @@ const COMMANDS: CommandSpec[] = [
   },
   {
     path: "search",
-    description: "search docs/spec for agent-friendly references",
+    description:
+      "search command/spec references and official doc titles (use docs get for full markdown)",
     args: ["<query>"],
     options: ["--source <source>", "--scope <scope>", "--category <name>", "--limit <n>"],
     readOnly: true,
