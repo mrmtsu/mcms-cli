@@ -4,6 +4,7 @@ import { requestJson } from "../../src/core/http.js";
 describe("http retry", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("retries retryable status and succeeds", async () => {
