@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { extractAllowedValues, extractApiFields, normalizeKind } from "../core/api-field-utils.js";
 
-const payloadSchema = z.record(z.unknown());
+const payloadSchema = z.record(z.string(), z.unknown());
 
 export type ValidationResult = {
   valid: boolean;
