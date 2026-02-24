@@ -1,4 +1,4 @@
-import type { Command } from "commander";
+import { Command } from "commander";
 import { createRuntimeContext, type RuntimeContext } from "../core/context.js";
 import { CliError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
@@ -8,18 +8,32 @@ export async function contextFromCommand(command: Command): Promise<RuntimeConte
   return createRuntimeContext(options);
 }
 
-export function getActionCommand(args: unknown[]): Command {
-  const command = args.at(-1);
-  if (
-    command &&
-    typeof command === "object" &&
-    "optsWithGlobals" in command &&
-    typeof (command as { optsWithGlobals?: unknown }).optsWithGlobals === "function"
-  ) {
-    return command as Command;
-  }
+type CommandAction<TArgs extends unknown[]> = (...args: [...TArgs, Command]) => Promise<void>;
 
-  throw new Error("Command context is unavailable");
+export function withCommandContext<TArgs extends unknown[]>(
+  handler: (ctx: RuntimeContext, ...args: TArgs) => Promise<void>,
+): CommandAction<TArgs> {
+  return async (...args: [...TArgs, Command]) => {
+    const commandCandidate = args.at(-1);
+    if (!isCommand(commandCandidate)) {
+      throw new Error("Command context is unavailable");
+    }
+
+    const command = commandCandidate;
+    const ctx = await contextFromCommand(command);
+    const actionArgs = args.slice(0, -1) as TArgs;
+    await handler(ctx, ...actionArgs);
+  };
+}
+
+function isCommand(value: unknown): value is Command {
+  return (
+    value instanceof Command ||
+    (typeof value === "object" &&
+      value !== null &&
+      "optsWithGlobals" in value &&
+      typeof (value as { optsWithGlobals?: unknown }).optsWithGlobals === "function")
+  );
 }
 
 export function parseIntegerOption(

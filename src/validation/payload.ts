@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { extractAllowedValues, extractApiFields, normalizeKind } from "../core/api-field-utils.js";
 
 const payloadSchema = z.record(z.unknown());
 
@@ -36,7 +37,7 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const fields = extractFields(apiSchema);
+  const fields = extractApiFields(apiSchema) as ApiField[];
   const knownFields = new Map(
     fields
       .filter(
@@ -75,7 +76,7 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
       continue;
     }
 
-    const allowedValues = extractAllowedValues(field);
+    const allowedValues = toAllowedValueSet(field);
     if (!allowedValues) {
       continue;
     }
@@ -192,18 +193,6 @@ function normalizeTypeHint(value: unknown): ExpectedValueType | null {
   }
 }
 
-function normalizeKind(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]/g, "");
-  return normalized.length > 0 ? normalized : null;
-}
-
 function matchesExpectedType(value: unknown, expected: ExpectedValueType): boolean {
   switch (expected) {
     case "string":
@@ -219,53 +208,11 @@ function matchesExpectedType(value: unknown, expected: ExpectedValueType): boole
   }
 }
 
-function extractAllowedValues(field: ApiField): Set<string> | null {
-  const candidates = [field.selectItems, field.options];
-
-  for (const candidate of candidates) {
-    if (!Array.isArray(candidate)) {
-      continue;
-    }
-
-    const values = candidate
-      .map((item) => {
-        if (typeof item === "string") {
-          return item;
-        }
-
-        if (typeof item === "object" && item !== null) {
-          const value =
-            (item as { value?: unknown; id?: unknown }).value ?? (item as { id?: unknown }).id;
-          return typeof value === "string" ? value : null;
-        }
-
-        return null;
-      })
-      .filter((value): value is string => value !== null && value.length > 0);
-
-    if (values.length > 0) {
-      return new Set(values);
-    }
+function toAllowedValueSet(field: ApiField): Set<string> | null {
+  const values = extractAllowedValues(field);
+  if (values.length === 0) {
+    return null;
   }
 
-  return null;
-}
-
-function extractFields(apiSchema: unknown): ApiField[] {
-  if (typeof apiSchema !== "object" || apiSchema === null) {
-    return [];
-  }
-
-  const schema = apiSchema as Record<string, unknown>;
-  const candidates = [schema.apiFields, schema.fields, schema.customFields];
-
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) {
-      return candidate.filter(
-        (item): item is ApiField => typeof item === "object" && item !== null,
-      );
-    }
-  }
-
-  return [];
+  return new Set(values);
 }

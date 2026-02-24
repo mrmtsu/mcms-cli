@@ -166,4 +166,74 @@ describe("http retry", () => {
     expect(logs).not.toContain("token=abc");
     expect(logs).toContain("https://example.test/api/v1/posts");
   });
+
+  it("does not emit retry logs when verbose is false", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('{"message":"rate"}', {
+          status: 429,
+          headers: {
+            "retry-after": "0",
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+
+    const result = await requestJson<{ ok: boolean }>({
+      url: "https://example.test/api",
+      apiKey: "k",
+      timeoutMs: 1000,
+      retry: 1,
+      retryMaxDelayMs: 100,
+      method: "GET",
+      verbose: false,
+    });
+
+    expect(result.data.ok).toBe(true);
+    expect(stderrSpy).not.toHaveBeenCalled();
+  });
+
+  it("emits retry logs when verbose is true", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('{"message":"rate"}', {
+          status: 429,
+          headers: {
+            "retry-after": "0",
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+
+    const result = await requestJson<{ ok: boolean }>({
+      url: "https://example.test/api",
+      apiKey: "k",
+      timeoutMs: 1000,
+      retry: 1,
+      retryMaxDelayMs: 100,
+      method: "GET",
+      verbose: true,
+    });
+
+    expect(result.data.ok).toBe(true);
+    const logs = stderrSpy.mock.calls.map((call) => String(call[0])).join("");
+    expect(logs).toContain("[retry]");
+    expect(logs).toContain("attempt 1/2");
+  });
 });

@@ -1,3 +1,5 @@
+import { extractAllowedValues, extractApiFields, normalizeKind } from "./api-field-utils.js";
+
 export type SchemaBundle = {
   version: "0.x";
   pulledAt: string;
@@ -79,7 +81,7 @@ export function generateTypesFromSchema(input: unknown): GeneratedTypesResult {
     usedTypeNames.add(typeName);
     endpointMap.push({ endpoint: schema.endpoint, typeName });
 
-    const fields = extractApiFields(schema.api);
+    const fields = extractApiFields(schema.api) as ApiField[];
     if (fields.length === 0) {
       warnings.push(`No fields found for endpoint: ${schema.endpoint}`);
     }
@@ -244,25 +246,6 @@ function extractEndpointName(item: ApiListItem): string | null {
   return null;
 }
 
-function extractApiFields(data: unknown): ApiField[] {
-  if (typeof data !== "object" || data === null) {
-    return [];
-  }
-
-  const asRecord = data as Record<string, unknown>;
-  const candidates = [asRecord.apiFields, asRecord.fields, asRecord.customFields];
-
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) {
-      return candidate.filter(
-        (item): item is ApiField => typeof item === "object" && item !== null,
-      );
-    }
-  }
-
-  return [];
-}
-
 function inferTsType(field: ApiField): string {
   const allowedValues = extractAllowedValues(field);
   if (allowedValues.length > 0) {
@@ -339,38 +322,6 @@ function mapKindToType(kind: string | null, field: ApiField): string | null {
   }
 }
 
-function extractAllowedValues(field: ApiField): string[] {
-  const candidates = [field.selectItems, field.options];
-
-  for (const candidate of candidates) {
-    if (!Array.isArray(candidate)) {
-      continue;
-    }
-
-    const values = candidate
-      .map((item) => {
-        if (typeof item === "string") {
-          return item;
-        }
-
-        if (typeof item === "object" && item !== null) {
-          const value =
-            (item as { value?: unknown; id?: unknown }).value ?? (item as { id?: unknown }).id;
-          return normalizeString(value);
-        }
-
-        return null;
-      })
-      .filter((value): value is string => value !== null);
-
-    if (values.length > 0) {
-      return [...new Set(values)];
-    }
-  }
-
-  return [];
-}
-
 function isFieldRequired(field: ApiField): boolean {
   return Boolean(field.required);
 }
@@ -386,18 +337,6 @@ function normalizeString(value: unknown): string | null {
 
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
-}
-
-function normalizeKind(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]/g, "");
-  return normalized.length > 0 ? normalized : null;
 }
 
 function toPascalCase(value: string): string {

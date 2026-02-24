@@ -55,7 +55,11 @@ function resolveVersion(): string {
     if (typeof pkg.version === "string" && pkg.version.length > 0) {
       return pkg.version;
     }
-  } catch {
+  } catch (error) {
+    if (process.argv.includes("--verbose")) {
+      const detail = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`[spec] failed to resolve version from package.json: ${detail}\n`);
+    }
     // fallback for non-standard runtime layouts
   }
 

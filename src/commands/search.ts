@@ -4,7 +4,7 @@ import { rankSearchHits } from "../core/search.js";
 import { getCliSpec } from "../core/spec.js";
 import { parseDocsSourceOption, resolveDocsProvider } from "../core/docs/provider.js";
 import { printSuccess } from "../core/output.js";
-import { contextFromCommand, getActionCommand, parseIntegerOption } from "./utils.js";
+import { parseIntegerOption, withCommandContext } from "./utils.js";
 import { CliError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
 
@@ -28,53 +28,50 @@ export function registerSearchCommand(program: Command): void {
     .option("--scope <scope>", "search scope: all|spec|docs", "all")
     .option("--category <name>", "optional docs category filter")
     .option("--limit <n>", "maximum number of hits (1-50)", "10")
-    .action(async (...actionArgs: unknown[]) => {
-      const query = actionArgs[0] as string;
-      const options = actionArgs[1] as SearchOptions;
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
+    .action(
+      withCommandContext(async (ctx, query: string, options: SearchOptions) => {
+        const source = parseDocsSourceOption(options.source);
+        const scope = parseScope(options.scope);
+        const category = normalizeCategory(options.category);
+        const limit = parseIntegerOption("limit", options.limit, { min: 1, max: 50 }) ?? 10;
+        const warnings: string[] = [];
+        const hits: SearchHit[] = [];
 
-      const source = parseDocsSourceOption(options.source);
-      const scope = parseScope(options.scope);
-      const category = normalizeCategory(options.category);
-      const limit = parseIntegerOption("limit", options.limit, { min: 1, max: 50 }) ?? 10;
-      const warnings: string[] = [];
-      const hits: SearchHit[] = [];
-
-      if (scope === "all" || scope === "spec") {
-        hits.push(...buildSpecHits());
-      }
-
-      let sourceResolved: "local" | "mcp" = "local";
-      if (scope === "all" || scope === "docs") {
-        const resolved = await resolveDocsProvider(source);
-        sourceResolved = resolved.sourceResolved;
-        warnings.push(...resolved.warnings);
-        try {
-          const listed = await resolved.provider.listDocuments({
-            category,
-            limit: 200,
-          });
-          hits.push(
-            ...listed.docs.map((doc) => toDocHit(doc.category, doc.filename, sourceResolved)),
-          );
-        } finally {
-          await resolved.provider.dispose?.();
+        if (scope === "all" || scope === "spec") {
+          hits.push(...buildSpecHits());
         }
-      } else {
-        sourceResolved = source === "mcp" ? "mcp" : "local";
-      }
 
-      const ranked = rankSearchHits(query, hits, limit);
+        let sourceResolved: "local" | "mcp" = "local";
+        if (scope === "all" || scope === "docs") {
+          const resolved = await resolveDocsProvider(source);
+          sourceResolved = resolved.sourceResolved;
+          warnings.push(...resolved.warnings);
+          try {
+            const listed = await resolved.provider.listDocuments({
+              category,
+              limit: 200,
+            });
+            hits.push(
+              ...listed.docs.map((doc) => toDocHit(doc.category, doc.filename, sourceResolved)),
+            );
+          } finally {
+            await resolved.provider.dispose?.();
+          }
+        } else {
+          sourceResolved = source === "mcp" ? "mcp" : "local";
+        }
 
-      printSuccess(ctx, {
-        query,
-        scope,
-        sourceResolved,
-        warnings,
-        hits: ranked,
-      });
-    });
+        const ranked = rankSearchHits(query, hits, limit);
+
+        printSuccess(ctx, {
+          query,
+          scope,
+          sourceResolved,
+          warnings,
+          hits: ranked,
+        });
+      }),
+    );
 }
 
 function parseScope(value: string | undefined): SearchScope {

@@ -1,14 +1,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
-import { createClient } from "microcms-js-sdk";
 import type { RuntimeContext } from "./context.js";
 import { CliError, fromHttpStatus } from "./errors.js";
 import { EXIT_CODE } from "./exit-codes.js";
 import { requestFormData, requestJson } from "./http.js";
-
-const MANAGEMENT_BASE_URL_OVERRIDE = process.env.MICROCMS_MANAGEMENT_API_BASE_URL;
-const CONTENT_BASE_URL_OVERRIDE = process.env.MICROCMS_CONTENT_API_BASE_URL;
-const CONTENT_MOCK_FILE = process.env.MICROCMS_CONTENT_MOCK_FILE;
 
 function assertAuth(
   ctx: RuntimeContext,
@@ -30,55 +25,27 @@ function assertAuth(
   }
 }
 
-function getContentClient(ctx: RuntimeContext) {
-  assertAuth(ctx);
-
-  return createClient({
-    serviceDomain: ctx.serviceDomain,
-    apiKey: ctx.apiKey,
-  }) as {
-    getList(params: { endpoint: string; queries?: Record<string, unknown> }): Promise<unknown>;
-    getListDetail(params: {
-      endpoint: string;
-      contentId: string;
-      queries?: Record<string, unknown>;
-    }): Promise<unknown>;
-    create(params: { endpoint: string; content: Record<string, unknown> }): Promise<unknown>;
-    update(params: {
-      endpoint: string;
-      contentId: string;
-      content: Record<string, unknown>;
-    }): Promise<unknown>;
-    delete(params: { endpoint: string; contentId: string }): Promise<void>;
-  };
-}
-
 export async function listContent(
   ctx: RuntimeContext,
   endpoint: string,
   queries?: Record<string, unknown>,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  if (CONTENT_MOCK_FILE) {
-    return runMockList(endpoint, queries);
+  const mockFilePath = getContentMockFilePath(ctx);
+  if (mockFilePath) {
+    return runMockList(mockFilePath, endpoint, queries, ctx.verbose);
   }
 
-  if (CONTENT_BASE_URL_OVERRIDE) {
-    const url = buildApiUrl(getContentBaseUrl(ctx.serviceDomain), [endpoint], queries);
-    const result = await requestJson<unknown>({
-      url,
-      apiKey: ctx.apiKey,
-      timeoutMs: ctx.timeoutMs,
-      retry: ctx.retry,
-      retryMaxDelayMs: ctx.retryMaxDelayMs,
-      verbose: ctx.verbose,
-    });
-    return { data: result.data, requestId: result.requestId };
-  }
-
-  const client = getContentClient(ctx);
-  const data = await client.getList({ endpoint, queries });
-  return { data, requestId: null };
+  const url = buildApiUrl(getContentBaseUrl(ctx), [endpoint], queries);
+  const result = await requestJson<unknown>({
+    url,
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+  });
+  return { data: result.data, requestId: result.requestId };
 }
 
 export async function getContent(
@@ -88,26 +55,21 @@ export async function getContent(
   queries?: Record<string, unknown>,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  if (CONTENT_MOCK_FILE) {
-    return runMockGet(endpoint, contentId, queries);
+  const mockFilePath = getContentMockFilePath(ctx);
+  if (mockFilePath) {
+    return runMockGet(mockFilePath, endpoint, contentId, queries, ctx.verbose);
   }
 
-  if (CONTENT_BASE_URL_OVERRIDE) {
-    const url = buildApiUrl(getContentBaseUrl(ctx.serviceDomain), [endpoint, contentId], queries);
-    const result = await requestJson<unknown>({
-      url,
-      apiKey: ctx.apiKey,
-      timeoutMs: ctx.timeoutMs,
-      retry: ctx.retry,
-      retryMaxDelayMs: ctx.retryMaxDelayMs,
-      verbose: ctx.verbose,
-    });
-    return { data: result.data, requestId: result.requestId };
-  }
-
-  const client = getContentClient(ctx);
-  const data = await client.getListDetail({ endpoint, contentId, queries });
-  return { data, requestId: null };
+  const url = buildApiUrl(getContentBaseUrl(ctx), [endpoint, contentId], queries);
+  const result = await requestJson<unknown>({
+    url,
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+  });
+  return { data: result.data, requestId: result.requestId };
 }
 
 export async function listContentMeta(
@@ -116,7 +78,7 @@ export async function listContentMeta(
   queries?: Record<string, unknown>,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), ["contents", endpoint], queries);
+  const url = buildApiUrl(getManagementBaseUrl(ctx), ["contents", endpoint], queries);
   const result = await requestJson<unknown>({
     url,
     apiKey: ctx.apiKey,
@@ -135,11 +97,7 @@ export async function getContentMeta(
   contentId: string,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), [
-    "contents",
-    endpoint,
-    contentId,
-  ]);
+  const url = buildApiUrl(getManagementBaseUrl(ctx), ["contents", endpoint, contentId]);
   const result = await requestJson<unknown>({
     url,
     apiKey: ctx.apiKey,
@@ -159,12 +117,7 @@ export async function patchContentStatus(
   status: "PUBLISH" | "DRAFT",
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), [
-    "contents",
-    endpoint,
-    contentId,
-    "status",
-  ]);
+  const url = buildApiUrl(getManagementBaseUrl(ctx), ["contents", endpoint, contentId, "status"]);
   const result = await requestJson<unknown>({
     url,
     method: "PATCH",
@@ -188,7 +141,7 @@ export async function patchContentCreatedBy(
   memberId: string,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), [
+  const url = buildApiUrl(getManagementBaseUrl(ctx), [
     "contents",
     endpoint,
     contentId,
@@ -216,28 +169,23 @@ export async function createContent(
   content: Record<string, unknown>,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  if (CONTENT_MOCK_FILE) {
-    return runMockCreate(endpoint, content);
+  const mockFilePath = getContentMockFilePath(ctx);
+  if (mockFilePath) {
+    return runMockCreate(mockFilePath, endpoint, content, ctx.verbose);
   }
 
-  if (CONTENT_BASE_URL_OVERRIDE) {
-    const url = buildApiUrl(getContentBaseUrl(ctx.serviceDomain), [endpoint]);
-    const result = await requestJson<unknown>({
-      url,
-      method: "POST",
-      apiKey: ctx.apiKey,
-      timeoutMs: ctx.timeoutMs,
-      retry: ctx.retry,
-      retryMaxDelayMs: ctx.retryMaxDelayMs,
-      verbose: ctx.verbose,
-      body: content,
-    });
-    return { data: result.data, requestId: result.requestId };
-  }
-
-  const client = getContentClient(ctx);
-  const data = await client.create({ endpoint, content });
-  return { data, requestId: null };
+  const url = buildApiUrl(getContentBaseUrl(ctx), [endpoint]);
+  const result = await requestJson<unknown>({
+    url,
+    method: "POST",
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+    body: content,
+  });
+  return { data: result.data, requestId: result.requestId };
 }
 
 export async function updateContent(
@@ -247,28 +195,23 @@ export async function updateContent(
   content: Record<string, unknown>,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  if (CONTENT_MOCK_FILE) {
-    return runMockUpdate(endpoint, contentId, content);
+  const mockFilePath = getContentMockFilePath(ctx);
+  if (mockFilePath) {
+    return runMockUpdate(mockFilePath, endpoint, contentId, content, ctx.verbose);
   }
 
-  if (CONTENT_BASE_URL_OVERRIDE) {
-    const url = buildApiUrl(getContentBaseUrl(ctx.serviceDomain), [endpoint, contentId]);
-    const result = await requestJson<unknown>({
-      url,
-      method: "PATCH",
-      apiKey: ctx.apiKey,
-      timeoutMs: ctx.timeoutMs,
-      retry: ctx.retry,
-      retryMaxDelayMs: ctx.retryMaxDelayMs,
-      verbose: ctx.verbose,
-      body: content,
-    });
-    return { data: result.data, requestId: result.requestId };
-  }
-
-  const client = getContentClient(ctx);
-  const data = await client.update({ endpoint, contentId, content });
-  return { data, requestId: null };
+  const url = buildApiUrl(getContentBaseUrl(ctx), [endpoint, contentId]);
+  const result = await requestJson<unknown>({
+    url,
+    method: "PATCH",
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+    body: content,
+  });
+  return { data: result.data, requestId: result.requestId };
 }
 
 export async function deleteContent(
@@ -277,35 +220,34 @@ export async function deleteContent(
   contentId: string,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  if (CONTENT_MOCK_FILE) {
-    return runMockDelete(endpoint, contentId);
+  const mockFilePath = getContentMockFilePath(ctx);
+  if (mockFilePath) {
+    return runMockDelete(mockFilePath, endpoint, contentId, ctx.verbose);
   }
 
-  if (CONTENT_BASE_URL_OVERRIDE) {
-    const url = buildApiUrl(getContentBaseUrl(ctx.serviceDomain), [endpoint, contentId]);
-    const result = await requestJson<unknown>({
-      url,
-      method: "DELETE",
-      apiKey: ctx.apiKey,
-      timeoutMs: ctx.timeoutMs,
-      retry: ctx.retry,
-      retryMaxDelayMs: ctx.retryMaxDelayMs,
-      verbose: ctx.verbose,
-    });
-    return {
-      data: result.data,
-      requestId: result.requestId,
-    };
-  }
+  const url = buildApiUrl(getContentBaseUrl(ctx), [endpoint, contentId]);
+  const result = await requestJson<unknown>({
+    url,
+    method: "DELETE",
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+  });
 
-  const client = getContentClient(ctx);
-  await client.delete({ endpoint, contentId });
+  const responseObject =
+    typeof result.data === "object" && result.data !== null && !Array.isArray(result.data)
+      ? (result.data as Record<string, unknown>)
+      : {};
+
   return {
     data: {
       id: contentId,
       deleted: true,
+      ...responseObject,
     },
-    requestId: null,
+    requestId: result.requestId,
   };
 }
 
@@ -313,7 +255,7 @@ export async function listApis(
   ctx: RuntimeContext,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), ["apis"]);
+  const url = buildApiUrl(getManagementBaseUrl(ctx), ["apis"]);
   const result = await requestJson<unknown>({
     url,
     apiKey: ctx.apiKey,
@@ -331,7 +273,7 @@ export async function getApiInfo(
   endpoint: string,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), ["apis", endpoint]);
+  const url = buildApiUrl(getManagementBaseUrl(ctx), ["apis", endpoint]);
   const result = await requestJson<unknown>({
     url,
     apiKey: ctx.apiKey,
@@ -349,7 +291,7 @@ export async function getMember(
   memberId: string,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), ["members", memberId]);
+  const url = buildApiUrl(getManagementBaseUrl(ctx), ["members", memberId]);
   const result = await requestJson<unknown>({
     url,
     apiKey: ctx.apiKey,
@@ -367,12 +309,7 @@ export async function listMedia(
   queries?: Record<string, unknown>,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  const url = buildApiUrlWithVersion(
-    getManagementBaseUrl(ctx.serviceDomain),
-    "v2",
-    ["media"],
-    queries,
-  );
+  const url = buildApiUrlWithVersion(getManagementBaseUrl(ctx), "v2", ["media"], queries);
   const result = await requestJson<unknown>({
     url,
     apiKey: ctx.apiKey,
@@ -404,7 +341,7 @@ export async function uploadMedia(
   const mimeType = guessMediaContentType(path);
   formData.append("file", new Blob([buffer], { type: mimeType }), basename(path));
 
-  const url = buildApiUrl(getManagementBaseUrl(ctx.serviceDomain), ["media"]);
+  const url = buildApiUrl(getManagementBaseUrl(ctx), ["media"]);
   const result = await requestFormData<unknown>({
     url,
     apiKey: ctx.apiKey,
@@ -423,7 +360,7 @@ export async function deleteMedia(
   mediaUrl: string,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
-  const url = buildApiUrlWithVersion(getManagementBaseUrl(ctx.serviceDomain), "v2", ["media"], {
+  const url = buildApiUrlWithVersion(getManagementBaseUrl(ctx), "v2", ["media"], {
     url: mediaUrl,
   });
   const result = await requestJson<unknown>({
@@ -439,26 +376,53 @@ export async function deleteMedia(
   return { data: result.data, requestId: result.requestId };
 }
 
-function getManagementBaseUrl(serviceDomain: string): string {
-  if (MANAGEMENT_BASE_URL_OVERRIDE) {
-    return normalizeBaseUrlOverride(
-      "MICROCMS_MANAGEMENT_API_BASE_URL",
-      MANAGEMENT_BASE_URL_OVERRIDE,
-      ["microcms-management.io"],
-    );
-  }
-
-  return buildTenantOrigin(serviceDomain, "microcms-management.io");
-}
-
-function getContentBaseUrl(serviceDomain: string): string {
-  if (CONTENT_BASE_URL_OVERRIDE) {
-    return normalizeBaseUrlOverride("MICROCMS_CONTENT_API_BASE_URL", CONTENT_BASE_URL_OVERRIDE, [
-      "microcms.io",
+function getManagementBaseUrl(ctx: RuntimeContext & { serviceDomain: string }): string {
+  const override = resolveOverride(
+    ctx.managementApiBaseUrlOverride,
+    process.env.MICROCMS_MANAGEMENT_API_BASE_URL,
+  );
+  if (override) {
+    return normalizeBaseUrlOverride("MICROCMS_MANAGEMENT_API_BASE_URL", override, [
+      "microcms-management.io",
     ]);
   }
 
-  return buildTenantOrigin(serviceDomain, "microcms.io");
+  return buildTenantOrigin(ctx.serviceDomain, "microcms-management.io");
+}
+
+function getContentBaseUrl(ctx: RuntimeContext & { serviceDomain: string }): string {
+  const override = resolveOverride(
+    ctx.contentApiBaseUrlOverride,
+    process.env.MICROCMS_CONTENT_API_BASE_URL,
+  );
+  if (override) {
+    return normalizeBaseUrlOverride("MICROCMS_CONTENT_API_BASE_URL", override, ["microcms.io"]);
+  }
+
+  return buildTenantOrigin(ctx.serviceDomain, "microcms.io");
+}
+
+function getContentMockFilePath(ctx: RuntimeContext): string | null {
+  const value = resolveOverride(ctx.contentMockFile, process.env.MICROCMS_CONTENT_MOCK_FILE);
+  return value ?? null;
+}
+
+function resolveOverride(primary?: string, fallback?: string): string | undefined {
+  const fromPrimary = normalizeOptionalString(primary);
+  if (fromPrimary) {
+    return fromPrimary;
+  }
+
+  return normalizeOptionalString(fallback);
+}
+
+function normalizeOptionalString(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 function buildTenantOrigin(serviceDomain: string, baseDomain: string): string {
@@ -552,10 +516,12 @@ type MockContentStore = {
 };
 
 async function runMockList(
+  mockFilePath: string,
   endpoint: string,
   queries?: Record<string, unknown>,
+  verbose = false,
 ): Promise<{ data: unknown; requestId: string }> {
-  const store = await readMockStore();
+  const store = await readMockStore(mockFilePath, verbose);
   const endpointStore = store.endpoints[endpoint] ?? {};
   const offset = Number(queries?.offset ?? 0);
   const limit = Number(queries?.limit ?? 10);
@@ -574,11 +540,13 @@ async function runMockList(
 }
 
 async function runMockGet(
+  mockFilePath: string,
   endpoint: string,
   contentId: string,
   _queries?: Record<string, unknown>,
+  verbose = false,
 ): Promise<{ data: unknown; requestId: string }> {
-  const store = await readMockStore();
+  const store = await readMockStore(mockFilePath, verbose);
   const endpointStore = store.endpoints[endpoint] ?? {};
   const hit = endpointStore[contentId];
   if (!hit) {
@@ -598,10 +566,12 @@ async function runMockGet(
 }
 
 async function runMockCreate(
+  mockFilePath: string,
   endpoint: string,
   content: Record<string, unknown>,
+  verbose = false,
 ): Promise<{ data: unknown; requestId: string }> {
-  const store = await readMockStore();
+  const store = await readMockStore(mockFilePath, verbose);
   if (!store.endpoints[endpoint]) {
     store.endpoints[endpoint] = {};
   }
@@ -609,7 +579,7 @@ async function runMockCreate(
   const id = `mock-created-${store.nextId}`;
   store.nextId += 1;
   store.endpoints[endpoint][id] = { ...content };
-  await writeMockStore(store);
+  await writeMockStore(mockFilePath, store);
 
   return {
     data: {
@@ -621,11 +591,13 @@ async function runMockCreate(
 }
 
 async function runMockUpdate(
+  mockFilePath: string,
   endpoint: string,
   contentId: string,
   content: Record<string, unknown>,
+  verbose = false,
 ): Promise<{ data: unknown; requestId: string }> {
-  const store = await readMockStore();
+  const store = await readMockStore(mockFilePath, verbose);
   const endpointStore = store.endpoints[endpoint] ?? {};
   if (!endpointStore[contentId]) {
     throw fromHttpStatus(404, "mock content not found", {
@@ -639,7 +611,7 @@ async function runMockUpdate(
     ...content,
   };
   store.endpoints[endpoint] = endpointStore;
-  await writeMockStore(store);
+  await writeMockStore(mockFilePath, store);
 
   return {
     data: {
@@ -650,10 +622,12 @@ async function runMockUpdate(
 }
 
 async function runMockDelete(
+  mockFilePath: string,
   endpoint: string,
   contentId: string,
+  verbose = false,
 ): Promise<{ data: unknown; requestId: string }> {
-  const store = await readMockStore();
+  const store = await readMockStore(mockFilePath, verbose);
   const endpointStore = store.endpoints[endpoint] ?? {};
   if (!endpointStore[contentId]) {
     throw fromHttpStatus(404, "mock content not found", {
@@ -664,7 +638,7 @@ async function runMockDelete(
 
   delete endpointStore[contentId];
   store.endpoints[endpoint] = endpointStore;
-  await writeMockStore(store);
+  await writeMockStore(mockFilePath, store);
 
   return {
     data: {
@@ -675,9 +649,7 @@ async function runMockDelete(
   };
 }
 
-async function readMockStore(): Promise<MockContentStore> {
-  const path = getMockFilePath();
-
+async function readMockStore(path: string, verbose = false): Promise<MockContentStore> {
   try {
     const raw = await readFile(path, "utf8");
     const parsed = JSON.parse(raw) as Partial<MockContentStore>;
@@ -686,7 +658,8 @@ async function readMockStore(): Promise<MockContentStore> {
       endpoints:
         typeof parsed.endpoints === "object" && parsed.endpoints !== null ? parsed.endpoints : {},
     };
-  } catch {
+  } catch (error) {
+    logVerbose(verbose, `failed to read mock store ${path}; using empty fallback store`, error);
     return {
       nextId: 1,
       endpoints: {},
@@ -694,17 +667,17 @@ async function readMockStore(): Promise<MockContentStore> {
   }
 }
 
-async function writeMockStore(store: MockContentStore): Promise<void> {
-  const path = getMockFilePath();
+async function writeMockStore(path: string, store: MockContentStore): Promise<void> {
   await writeFile(path, JSON.stringify(store, null, 2), "utf8");
 }
 
-function getMockFilePath(): string {
-  if (!CONTENT_MOCK_FILE) {
-    throw new Error("MICROCMS_CONTENT_MOCK_FILE is not set");
+function logVerbose(verbose: boolean, message: string, error: unknown): void {
+  if (!verbose) {
+    return;
   }
 
-  return CONTENT_MOCK_FILE;
+  const detail = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`[client] ${message}: ${detail}\n`);
 }
 
 function guessMediaContentType(path: string): string {

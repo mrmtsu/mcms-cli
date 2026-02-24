@@ -7,7 +7,7 @@ import { CliError, normalizeError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
 import { printSuccess } from "../core/output.js";
 import { extractApiEndpoints } from "../core/schema.js";
-import { contextFromCommand, getActionCommand } from "./utils.js";
+import { withCommandContext } from "./utils.js";
 
 type SupportedShell = "bash" | "zsh" | "fish";
 
@@ -35,89 +35,86 @@ export function registerCompletionCommands(program: Command): void {
     .command("install")
     .argument("[shell]", "bash|zsh|fish")
     .description("Install completion script for your shell")
-    .action(async (...actionArgs: unknown[]) => {
-      const shellArg = actionArgs[0] as string | undefined;
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const shell = parseShell(shellArg ?? detectShellFromEnv());
-      const targetPath = getCompletionFilePath(shell);
-      const script = buildCompletionScript(shell);
-      await assertSafeCompletionTargetForWrite(targetPath);
+    .action(
+      withCommandContext(async (ctx, shellArg?: string) => {
+        const shell = parseShell(shellArg ?? detectShellFromEnv());
+        const targetPath = getCompletionFilePath(shell);
+        const script = buildCompletionScript(shell);
+        await assertSafeCompletionTargetForWrite(targetPath);
 
-      await mkdir(dirname(targetPath), { recursive: true });
-      await writeFile(targetPath, script, "utf8");
+        await mkdir(dirname(targetPath), { recursive: true });
+        await writeFile(targetPath, script, "utf8");
 
-      printSuccess(ctx, {
-        installed: true,
-        shell,
-        path: targetPath,
-        reloadHint: getReloadHint(shell),
-      });
-    });
+        printSuccess(ctx, {
+          installed: true,
+          shell,
+          path: targetPath,
+          reloadHint: getReloadHint(shell),
+        });
+      }),
+    );
 
   completion
     .command("uninstall")
     .description("Remove installed completion scripts")
-    .action(async (...actionArgs: unknown[]) => {
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
+    .action(
+      withCommandContext(async (ctx) => {
+        const removed: string[] = [];
+        for (const shell of SUPPORTED_SHELLS) {
+          const path = getCompletionFilePath(shell);
+          const state = await getPathState(path);
+          if (state === "missing") {
+            continue;
+          }
 
-      const removed: string[] = [];
-      for (const shell of SUPPORTED_SHELLS) {
-        const path = getCompletionFilePath(shell);
-        const state = await getPathState(path);
-        if (state === "missing") {
-          continue;
+          if (state === "symlink") {
+            throw new CliError({
+              code: "INVALID_INPUT",
+              message: `Refusing to uninstall completion because target is a symbolic link: ${path}`,
+              exitCode: EXIT_CODE.INVALID_INPUT,
+            });
+          }
+
+          if (state !== "file") {
+            throw new CliError({
+              code: "INVALID_INPUT",
+              message: `Refusing to uninstall completion because target is not a regular file: ${path}`,
+              exitCode: EXIT_CODE.INVALID_INPUT,
+            });
+          }
+
+          await rm(path, { force: true });
+          removed.push(path);
         }
 
-        if (state === "symlink") {
-          throw new CliError({
-            code: "INVALID_INPUT",
-            message: `Refusing to uninstall completion because target is a symbolic link: ${path}`,
-            exitCode: EXIT_CODE.INVALID_INPUT,
-          });
-        }
-
-        if (state !== "file") {
-          throw new CliError({
-            code: "INVALID_INPUT",
-            message: `Refusing to uninstall completion because target is not a regular file: ${path}`,
-            exitCode: EXIT_CODE.INVALID_INPUT,
-          });
-        }
-
-        await rm(path, { force: true });
-        removed.push(path);
-      }
-
-      printSuccess(ctx, {
-        uninstalled: true,
-        removed,
-      });
-    });
+        printSuccess(ctx, {
+          uninstalled: true,
+          removed,
+        });
+      }),
+    );
 
   completion
     .command("endpoints")
     .description("Print endpoint candidates for shell completion")
-    .action(async (...actionArgs: unknown[]) => {
-      const command = getActionCommand(actionArgs);
+    .action(
+      withCommandContext(async (ctx) => {
+        try {
+          const result = await listApis(ctx);
+          const endpoints = extractApiEndpoints(result.data);
+          if (endpoints.length > 0) {
+            process.stdout.write(`${endpoints.join("\n")}\n`);
+          }
+        } catch (error) {
+          const normalized = normalizeError(error);
+          if (isExpectedCompletionFailure(normalized.code)) {
+            return;
+          }
 
-      try {
-        const ctx = await contextFromCommand(command);
-        const result = await listApis(ctx);
-        const endpoints = extractApiEndpoints(result.data);
-        if (endpoints.length > 0) {
-          process.stdout.write(`${endpoints.join("\n")}\n`);
+          throw normalized;
         }
-      } catch (error) {
-        const normalized = normalizeError(error);
-        if (isExpectedCompletionFailure(normalized.code)) {
-          return;
-        }
-
-        throw normalized;
-      }
-    });
+      }),
+    );
 }
 
 function parseShell(value: string | undefined): SupportedShell {

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `src/core/api-field-utils.ts` to centralize API field extraction, kind normalization, and allowed-value parsing shared by schema/type generation and payload validation.
+- New safety checks for `content list --all`: inconsistent `totalCount` detection, merged item safety limit (default `100000`, configurable via `MICROCMS_CONTENT_ALL_MAX_ITEMS`), and max page cap errors.
+- New tests for Content API HTTP path unification, `--all` safety behavior, runtime env switching for mock file resolution, and verbose/non-verbose retry logging behavior.
+
+### Changed
+- Unified Content API operations (`list/get/create/update/delete`) onto the internal HTTP layer (`requestJson`) and removed the `microcms-js-sdk` runtime path.
+- Refactored command action handlers to typed signatures using shared command-context wiring, removing `actionArgs[...] as ...` patterns across command modules.
+- Moved environment override values (`MICROCMS_*_BASE_URL`, `MICROCMS_CONTENT_MOCK_FILE`) into `RuntimeContext`-backed runtime resolution to improve testability and consistency.
+- Simplified prompt API key input by using keypress event handling from Node's readline support while preserving no-echo TTY behavior.
+
+### Fixed
+- Standardized delete response shaping for content operations so JSON envelope compatibility is preserved while request-id propagation remains available.
+- Improved verbose diagnostics for intentionally swallowed errors (version resolution fallback, keychain access failures, mock store read fallback).
+
 ## [0.3.0] - 2026-02-23
 
 ### Added

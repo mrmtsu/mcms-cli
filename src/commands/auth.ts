@@ -5,7 +5,7 @@ import { CliError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
 import { printSuccess } from "../core/output.js";
 import { readConfig, writeConfig } from "../core/config.js";
-import { contextFromCommand, getActionCommand } from "./utils.js";
+import { contextFromCommand, withCommandContext } from "./utils.js";
 
 export function registerAuthCommands(program: Command): void {
   const auth = program.command("auth").description("Manage authentication settings");
@@ -95,9 +95,9 @@ export function registerAuthCommands(program: Command): void {
         });
 
         const saveResult = profile
-          ? await saveApiKeyForProfile(profile, ctx.apiKey)
-          : await saveApiKey(ctx.serviceDomain, ctx.apiKey);
-        const keychainAvailable = await canUseKeychain();
+          ? await saveApiKeyForProfile(profile, ctx.apiKey, ctx.verbose)
+          : await saveApiKey(ctx.serviceDomain, ctx.apiKey, ctx.verbose);
+        const keychainAvailable = await canUseKeychain(ctx.verbose);
 
         printSuccess(ctx, {
           profile: profile ?? null,
@@ -113,42 +113,42 @@ export function registerAuthCommands(program: Command): void {
   auth
     .command("status")
     .description("Show auth resolution status")
-    .action(async (...actionArgs: unknown[]) => {
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const keychainAvailable = await canUseKeychain();
+    .action(
+      withCommandContext(async (ctx) => {
+        const keychainAvailable = await canUseKeychain(ctx.verbose);
 
-      printSuccess(ctx, {
-        profile: ctx.profile ?? null,
-        serviceDomain: ctx.serviceDomain ?? null,
-        apiKeyAvailable: Boolean(ctx.apiKey),
-        apiKeySource: ctx.apiKeySource,
-        apiKeySourceDetail: ctx.apiKeySourceDetail,
-        keychainAvailable,
-      });
-    });
+        printSuccess(ctx, {
+          profile: ctx.profile ?? null,
+          serviceDomain: ctx.serviceDomain ?? null,
+          apiKeyAvailable: Boolean(ctx.apiKey),
+          apiKeySource: ctx.apiKeySource,
+          apiKeySourceDetail: ctx.apiKeySourceDetail,
+          keychainAvailable,
+        });
+      }),
+    );
 
   const profile = auth.command("profile").description("Manage named auth profiles");
 
   profile
     .command("list")
     .description("List configured profiles")
-    .action(async (...actionArgs: unknown[]) => {
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const config = await readConfig();
-      const defaultProfile = config.defaultProfile ?? null;
-      const profiles = Object.entries(config.profiles ?? {}).map(([name, value]) => ({
-        name,
-        serviceDomain: value.serviceDomain,
-        isDefault: defaultProfile === name,
-      }));
+    .action(
+      withCommandContext(async (ctx) => {
+        const config = await readConfig();
+        const defaultProfile = config.defaultProfile ?? null;
+        const profiles = Object.entries(config.profiles ?? {}).map(([name, value]) => ({
+          name,
+          serviceDomain: value.serviceDomain,
+          isDefault: defaultProfile === name,
+        }));
 
-      printSuccess(ctx, {
-        defaultProfile,
-        profiles,
-      });
-    });
+        printSuccess(ctx, {
+          defaultProfile,
+          profiles,
+        });
+      }),
+    );
 
   profile
     .command("add")
@@ -156,94 +156,95 @@ export function registerAuthCommands(program: Command): void {
     .option("--service-domain <serviceDomain>", "microCMS service domain")
     .option("--set-default", "set this profile as default")
     .description("Add or update a profile")
-    .action(async (...actionArgs: unknown[]) => {
-      const name = actionArgs[0] as string;
-      const options = actionArgs[1] as { serviceDomain?: string; setDefault?: boolean };
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const profileName = normalizeProfileName(name);
-      const serviceDomain = normalizeServiceDomain(
-        options.serviceDomain ?? command.optsWithGlobals().serviceDomain,
-      );
+    .action(
+      async (
+        name: string,
+        options: { serviceDomain?: string; setDefault?: boolean },
+        command: Command,
+      ) => {
+        const ctx = await contextFromCommand(command);
+        const profileName = normalizeProfileName(name);
+        const serviceDomain = normalizeServiceDomain(
+          options.serviceDomain ?? command.optsWithGlobals().serviceDomain,
+        );
 
-      const config = await readConfig();
-      const profiles = { ...config.profiles };
-      profiles[profileName] = { serviceDomain };
+        const config = await readConfig();
+        const profiles = { ...config.profiles };
+        profiles[profileName] = { serviceDomain };
 
-      await writeConfig({
-        ...config,
-        profiles,
-        defaultProfile: options.setDefault ? profileName : config.defaultProfile,
-      });
+        await writeConfig({
+          ...config,
+          profiles,
+          defaultProfile: options.setDefault ? profileName : config.defaultProfile,
+        });
 
-      printSuccess(ctx, {
-        profile: profileName,
-        serviceDomain,
-        defaultProfile: options.setDefault ? profileName : (config.defaultProfile ?? null),
-      });
-    });
+        printSuccess(ctx, {
+          profile: profileName,
+          serviceDomain,
+          defaultProfile: options.setDefault ? profileName : (config.defaultProfile ?? null),
+        });
+      },
+    );
 
   profile
     .command("use")
     .argument("<name>", "profile name")
     .description("Set default profile")
-    .action(async (...actionArgs: unknown[]) => {
-      const name = actionArgs[0] as string;
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const profileName = normalizeProfileName(name);
-      const config = await readConfig();
+    .action(
+      withCommandContext(async (ctx, name: string) => {
+        const profileName = normalizeProfileName(name);
+        const config = await readConfig();
 
-      if (!config.profiles?.[profileName]) {
-        throw new CliError({
-          code: "INVALID_INPUT",
-          message: `Profile not found: ${profileName}`,
-          exitCode: EXIT_CODE.INVALID_INPUT,
+        if (!config.profiles?.[profileName]) {
+          throw new CliError({
+            code: "INVALID_INPUT",
+            message: `Profile not found: ${profileName}`,
+            exitCode: EXIT_CODE.INVALID_INPUT,
+          });
+        }
+
+        await writeConfig({
+          ...config,
+          defaultProfile: profileName,
         });
-      }
 
-      await writeConfig({
-        ...config,
-        defaultProfile: profileName,
-      });
-
-      printSuccess(ctx, {
-        defaultProfile: profileName,
-      });
-    });
+        printSuccess(ctx, {
+          defaultProfile: profileName,
+        });
+      }),
+    );
 
   profile
     .command("remove")
     .argument("<name>", "profile name")
     .description("Remove profile from config")
-    .action(async (...actionArgs: unknown[]) => {
-      const name = actionArgs[0] as string;
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const profileName = normalizeProfileName(name);
-      const config = await readConfig();
-      const profiles = { ...config.profiles };
+    .action(
+      withCommandContext(async (ctx, name: string) => {
+        const profileName = normalizeProfileName(name);
+        const config = await readConfig();
+        const profiles = { ...config.profiles };
 
-      if (!profiles[profileName]) {
-        throw new CliError({
-          code: "INVALID_INPUT",
-          message: `Profile not found: ${profileName}`,
-          exitCode: EXIT_CODE.INVALID_INPUT,
+        if (!profiles[profileName]) {
+          throw new CliError({
+            code: "INVALID_INPUT",
+            message: `Profile not found: ${profileName}`,
+            exitCode: EXIT_CODE.INVALID_INPUT,
+          });
+        }
+
+        delete profiles[profileName];
+
+        await writeConfig({
+          ...config,
+          profiles: Object.keys(profiles).length > 0 ? profiles : undefined,
+          defaultProfile: config.defaultProfile === profileName ? undefined : config.defaultProfile,
         });
-      }
 
-      delete profiles[profileName];
-
-      await writeConfig({
-        ...config,
-        profiles: Object.keys(profiles).length > 0 ? profiles : undefined,
-        defaultProfile: config.defaultProfile === profileName ? undefined : config.defaultProfile,
-      });
-
-      printSuccess(ctx, {
-        removed: profileName,
-      });
-    });
+        printSuccess(ctx, {
+          removed: profileName,
+        });
+      }),
+    );
 }
 
 function normalizeProfileName(value: string | undefined): string {

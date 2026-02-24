@@ -1,3 +1,4 @@
+import { emitKeypressEvents } from "node:readline";
 import { readApiKey, readApiKeyForProfile } from "./auth-store.js";
 import { readConfig } from "./config.js";
 import { CliError } from "./errors.js";
@@ -32,6 +33,9 @@ export type RuntimeContext = {
   apiKey?: string;
   apiKeySource: ApiKeySource;
   apiKeySourceDetail: ApiKeySourceDetail;
+  managementApiBaseUrlOverride?: string;
+  contentApiBaseUrlOverride?: string;
+  contentMockFile?: string;
 };
 
 export type GlobalOptions = {
@@ -129,7 +133,7 @@ export async function createRuntimeContext(options: GlobalOptions): Promise<Runt
   }
 
   if (!apiKey && profile) {
-    const fromProfileKeychain = await readApiKeyForProfile(profile);
+    const fromProfileKeychain = await readApiKeyForProfile(profile, Boolean(options.verbose));
     if (fromProfileKeychain) {
       apiKey = fromProfileKeychain;
       apiKeySource = "keychain";
@@ -138,7 +142,7 @@ export async function createRuntimeContext(options: GlobalOptions): Promise<Runt
   }
 
   if (!apiKey && serviceDomain) {
-    const fromKeychain = await readApiKey(serviceDomain);
+    const fromKeychain = await readApiKey(serviceDomain, Boolean(options.verbose));
     if (fromKeychain) {
       apiKey = fromKeychain;
       apiKeySource = "keychain";
@@ -161,6 +165,9 @@ export async function createRuntimeContext(options: GlobalOptions): Promise<Runt
     apiKey,
     apiKeySource,
     apiKeySourceDetail,
+    managementApiBaseUrlOverride: normalizeString(process.env.MICROCMS_MANAGEMENT_API_BASE_URL),
+    contentApiBaseUrlOverride: normalizeString(process.env.MICROCMS_CONTENT_API_BASE_URL),
+    contentMockFile: normalizeString(process.env.MICROCMS_CONTENT_MOCK_FILE),
   };
 }
 
@@ -360,17 +367,16 @@ async function readApiKeyFromPrompt(): Promise<string> {
   const wasRaw = Boolean(stdin.isRaw);
   stdin.setEncoding("utf8");
   stdin.resume();
+  emitKeypressEvents(stdin);
 
   process.stderr.write("API key: ");
 
   return new Promise<string>((resolve, reject) => {
     let value = "";
-    let escapePending = false;
-    let inControlSequence = false;
     let settled = false;
 
     const cleanup = () => {
-      stdin.off("data", onData);
+      stdin.off("keypress", onKeypress);
       stdin.off("end", onEnd);
       stdin.off("error", onError);
       if (stdin.isTTY) {
@@ -398,62 +404,48 @@ async function readApiKeyFromPrompt(): Promise<string> {
       reject(error);
     };
 
-    const onData = (chunk: string | Buffer) => {
-      const text = Buffer.isBuffer(chunk) ? chunk.toString("utf8") : chunk;
-      for (const char of text) {
-        if (escapePending) {
-          escapePending = false;
-          if (char === "[" || char === "O") {
-            inControlSequence = true;
-          }
-          continue;
-        }
-
-        if (inControlSequence) {
-          if (/[A-Za-z~]/.test(char)) {
-            inControlSequence = false;
-          }
-          continue;
-        }
-
-        if (char === "\r" || char === "\n") {
-          const trimmed = value.trim();
-          if (!trimmed) {
-            finishReject(
-              new CliError({
-                code: "INVALID_INPUT",
-                message: "No API key was entered",
-                exitCode: EXIT_CODE.INVALID_INPUT,
-              }),
-            );
-            return;
-          }
-
-          finishResolve(trimmed);
-          return;
-        }
-
-        if (char === "\u0003") {
+    const onKeypress = (
+      input: string,
+      key: { name?: string; ctrl?: boolean; meta?: boolean } | undefined,
+    ) => {
+      if (key?.name === "return" || key?.name === "enter") {
+        const trimmed = value.trim();
+        if (!trimmed) {
           finishReject(
             new CliError({
               code: "INVALID_INPUT",
-              message: "API key input canceled",
+              message: "No API key was entered",
               exitCode: EXIT_CODE.INVALID_INPUT,
             }),
           );
           return;
         }
 
-        if (char === "\u007f" || char === "\b" || char === "\u0008") {
-          value = value.slice(0, -1);
-          continue;
-        }
+        finishResolve(trimmed);
+        return;
+      }
 
-        if (char === "\u001b") {
-          escapePending = true;
-          continue;
-        }
+      if (key?.ctrl && key.name === "c") {
+        finishReject(
+          new CliError({
+            code: "INVALID_INPUT",
+            message: "API key input canceled",
+            exitCode: EXIT_CODE.INVALID_INPUT,
+          }),
+        );
+        return;
+      }
 
+      if (key?.name === "backspace") {
+        value = value.slice(0, -1);
+        return;
+      }
+
+      if (key?.ctrl || key?.meta) {
+        return;
+      }
+
+      for (const char of input) {
         if (char >= " ") {
           value += char;
         }
@@ -483,7 +475,7 @@ async function readApiKeyFromPrompt(): Promise<string> {
     if (stdin.isTTY) {
       stdin.setRawMode(true);
     }
-    stdin.on("data", onData);
+    stdin.on("keypress", onKeypress);
     stdin.on("end", onEnd);
     stdin.on("error", onError);
   });

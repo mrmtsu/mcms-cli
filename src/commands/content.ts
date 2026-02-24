@@ -15,7 +15,7 @@ import { CliError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
 import { assertObjectPayload, readJsonFile } from "../core/io.js";
 import { printSuccess } from "../core/output.js";
-import { contextFromCommand, getActionCommand, parseIntegerOption } from "./utils.js";
+import { parseIntegerOption, withCommandContext } from "./utils.js";
 
 type ListOptions = {
   limit?: string;
@@ -61,73 +61,72 @@ export function registerContentCommands(program: Command): void {
     .option("--depth <depth>")
     .option("--draft-key <draftKey>")
     .option("--all", "fetch all pages")
-    .action(async (...actionArgs: unknown[]) => {
-      const endpoint = actionArgs[0] as string;
-      const options = actionArgs[1] as ListOptions;
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const queries = compactObject({
-        limit: parseIntegerOption("limit", options.limit, { min: 1, max: 100 }),
-        offset: parseIntegerOption("offset", options.offset, { min: 0, max: 100000 }),
-        orders: options.orders,
-        q: options.q,
-        filters: options.filters,
-        fields: options.fields,
-        ids: options.ids,
-        depth: parseIntegerOption("depth", options.depth, { min: 0, max: 3 }),
-        draftKey: options.draftKey,
-      });
-      const result = options.all
-        ? await listContentAll(ctx, endpoint, queries)
-        : await listContent(ctx, endpoint, queries);
-      printSuccess(ctx, result.data, result.requestId);
-    });
+    .action(
+      withCommandContext(async (ctx, endpoint: string, options: ListOptions) => {
+        const queries = compactObject({
+          limit: parseIntegerOption("limit", options.limit, { min: 1, max: 100 }),
+          offset: parseIntegerOption("offset", options.offset, { min: 0, max: 100000 }),
+          orders: options.orders,
+          q: options.q,
+          filters: options.filters,
+          fields: options.fields,
+          ids: options.ids,
+          depth: parseIntegerOption("depth", options.depth, { min: 0, max: 3 }),
+          draftKey: options.draftKey,
+        });
+        const result = options.all
+          ? await listContentAllWithFetcher(ctx, endpoint, queries, (nextQueries) =>
+              listContent(ctx, endpoint, nextQueries),
+            )
+          : await listContent(ctx, endpoint, queries);
+        printSuccess(ctx, result.data, result.requestId);
+      }),
+    );
 
   content
     .command("get")
     .argument("<endpoint>", "API endpoint")
     .argument("<id>", "Content ID")
     .option("--draft-key <draftKey>")
-    .action(async (...actionArgs: unknown[]) => {
-      const endpoint = actionArgs[0] as string;
-      const id = actionArgs[1] as string;
-      const options = actionArgs[2] as { draftKey?: string };
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const result = await getContent(
-        ctx,
-        endpoint,
-        id,
-        compactObject({ draftKey: options.draftKey }),
-      );
-      printSuccess(ctx, result.data, result.requestId);
-    });
+    .action(
+      withCommandContext(
+        async (ctx, endpoint: string, id: string, options: { draftKey?: string }) => {
+          const result = await getContent(
+            ctx,
+            endpoint,
+            id,
+            compactObject({ draftKey: options.draftKey }),
+          );
+          printSuccess(ctx, result.data, result.requestId);
+        },
+      ),
+    );
 
   content
     .command("create")
     .argument("<endpoint>", "API endpoint")
     .requiredOption("--file <path>", "Payload JSON file")
     .option("--dry-run", "show operation without sending request")
-    .action(async (...actionArgs: unknown[]) => {
-      const endpoint = actionArgs[0] as string;
-      const options = actionArgs[1] as { file: string; dryRun?: boolean };
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const payload = assertObjectPayload(await readJsonFile(options.file));
+    .action(
+      withCommandContext(
+        async (ctx, endpoint: string, options: { file: string; dryRun?: boolean }) => {
+          const payload = assertObjectPayload(await readJsonFile(options.file));
 
-      if (options.dryRun) {
-        printSuccess(ctx, {
-          dryRun: true,
-          operation: "content.create",
-          endpoint,
-          payload,
-        });
-        return;
-      }
+          if (options.dryRun) {
+            printSuccess(ctx, {
+              dryRun: true,
+              operation: "content.create",
+              endpoint,
+              payload,
+            });
+            return;
+          }
 
-      const result = await createContent(ctx, endpoint, payload);
-      printSuccess(ctx, result.data, result.requestId);
-    });
+          const result = await createContent(ctx, endpoint, payload);
+          printSuccess(ctx, result.data, result.requestId);
+        },
+      ),
+    );
 
   content
     .command("update")
@@ -135,61 +134,58 @@ export function registerContentCommands(program: Command): void {
     .argument("<id>", "Content ID")
     .requiredOption("--file <path>", "Payload JSON file")
     .option("--dry-run", "show operation without sending request")
-    .action(async (...actionArgs: unknown[]) => {
-      const endpoint = actionArgs[0] as string;
-      const id = actionArgs[1] as string;
-      const options = actionArgs[2] as { file: string; dryRun?: boolean };
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const payload = assertObjectPayload(await readJsonFile(options.file));
+    .action(
+      withCommandContext(
+        async (ctx, endpoint: string, id: string, options: { file: string; dryRun?: boolean }) => {
+          const payload = assertObjectPayload(await readJsonFile(options.file));
 
-      if (options.dryRun) {
-        printSuccess(ctx, {
-          dryRun: true,
-          operation: "content.update",
-          endpoint,
-          id,
-          payload,
-        });
-        return;
-      }
+          if (options.dryRun) {
+            printSuccess(ctx, {
+              dryRun: true,
+              operation: "content.update",
+              endpoint,
+              id,
+              payload,
+            });
+            return;
+          }
 
-      const result = await updateContent(ctx, endpoint, id, payload);
-      printSuccess(ctx, result.data, result.requestId);
-    });
+          const result = await updateContent(ctx, endpoint, id, payload);
+          printSuccess(ctx, result.data, result.requestId);
+        },
+      ),
+    );
 
   content
     .command("delete")
     .argument("<endpoint>", "API endpoint")
     .argument("<id>", "Content ID")
     .option("--dry-run", "show operation without sending request")
-    .action(async (...actionArgs: unknown[]) => {
-      const endpoint = actionArgs[0] as string;
-      const id = actionArgs[1] as string;
-      const options = actionArgs[2] as { dryRun?: boolean };
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-
-      if (options.dryRun) {
-        printSuccess(ctx, {
-          dryRun: true,
-          operation: "content.delete",
-          endpoint,
-          id,
-        });
-        return;
-      }
-
-      const result = await deleteContent(ctx, endpoint, id);
-      const data =
-        typeof result.data === "object" && result.data !== null
-          ? result.data
-          : {
+    .action(
+      withCommandContext(
+        async (ctx, endpoint: string, id: string, options: { dryRun?: boolean }) => {
+          if (options.dryRun) {
+            printSuccess(ctx, {
+              dryRun: true,
+              operation: "content.delete",
+              endpoint,
               id,
-              deleted: true,
-            };
-      printSuccess(ctx, data, result.requestId);
-    });
+            });
+            return;
+          }
+
+          const result = await deleteContent(ctx, endpoint, id);
+          const data =
+            typeof result.data === "object" && result.data !== null
+              ? result.data
+              : {
+                  id,
+                  deleted: true,
+                };
+          printSuccess(ctx, data, result.requestId);
+        },
+      ),
+    );
 
   const meta = content.command("meta").description("Management API content metadata operations");
 
@@ -198,32 +194,28 @@ export function registerContentCommands(program: Command): void {
     .argument("<endpoint>", "API endpoint")
     .option("--limit <limit>")
     .option("--offset <offset>")
-    .action(async (...actionArgs: unknown[]) => {
-      const endpoint = actionArgs[0] as string;
-      const options = actionArgs[1] as MetaListOptions;
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const queries = compactObject({
-        limit: parseIntegerOption("limit", options.limit, { min: 1, max: 100 }),
-        offset: parseIntegerOption("offset", options.offset, { min: 0, max: 100000 }),
-      });
+    .action(
+      withCommandContext(async (ctx, endpoint: string, options: MetaListOptions) => {
+        const queries = compactObject({
+          limit: parseIntegerOption("limit", options.limit, { min: 1, max: 100 }),
+          offset: parseIntegerOption("offset", options.offset, { min: 0, max: 100000 }),
+        });
 
-      const result = await listContentMeta(ctx, endpoint, queries);
-      printSuccess(ctx, result.data, result.requestId);
-    });
+        const result = await listContentMeta(ctx, endpoint, queries);
+        printSuccess(ctx, result.data, result.requestId);
+      }),
+    );
 
   meta
     .command("get")
     .argument("<endpoint>", "API endpoint")
     .argument("<id>", "Content ID")
-    .action(async (...actionArgs: unknown[]) => {
-      const endpoint = actionArgs[0] as string;
-      const id = actionArgs[1] as string;
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const result = await getContentMeta(ctx, endpoint, id);
-      printSuccess(ctx, result.data, result.requestId);
-    });
+    .action(
+      withCommandContext(async (ctx, endpoint: string, id: string) => {
+        const result = await getContentMeta(ctx, endpoint, id);
+        printSuccess(ctx, result.data, result.requestId);
+      }),
+    );
 
   const status = content.command("status").description("Management API content status operations");
 
@@ -233,28 +225,25 @@ export function registerContentCommands(program: Command): void {
     .argument("<id>", "Content ID")
     .requiredOption("--status <status>", "Target status: PUBLISH|DRAFT")
     .option("--dry-run", "show operation without sending request")
-    .action(async (...actionArgs: unknown[]) => {
-      const endpoint = actionArgs[0] as string;
-      const id = actionArgs[1] as string;
-      const options = actionArgs[2] as StatusSetOptions;
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const normalizedStatus = parseContentStatus(options.status);
+    .action(
+      withCommandContext(async (ctx, endpoint: string, id: string, options: StatusSetOptions) => {
+        const normalizedStatus = parseContentStatus(options.status);
 
-      if (options.dryRun) {
-        printSuccess(ctx, {
-          dryRun: true,
-          operation: "content.status.set",
-          endpoint,
-          id,
-          status: normalizedStatus,
-        });
-        return;
-      }
+        if (options.dryRun) {
+          printSuccess(ctx, {
+            dryRun: true,
+            operation: "content.status.set",
+            endpoint,
+            id,
+            status: normalizedStatus,
+          });
+          return;
+        }
 
-      const result = await patchContentStatus(ctx, endpoint, id, normalizedStatus);
-      printSuccess(ctx, result.data, result.requestId);
-    });
+        const result = await patchContentStatus(ctx, endpoint, id, normalizedStatus);
+        printSuccess(ctx, result.data, result.requestId);
+      }),
+    );
 
   const createdBy = content
     .command("created-by")
@@ -266,28 +255,27 @@ export function registerContentCommands(program: Command): void {
     .argument("<id>", "Content ID")
     .requiredOption("--member <memberId>", "Target member ID")
     .option("--dry-run", "show operation without sending request")
-    .action(async (...actionArgs: unknown[]) => {
-      const endpoint = actionArgs[0] as string;
-      const id = actionArgs[1] as string;
-      const options = actionArgs[2] as CreatedBySetOptions;
-      const command = getActionCommand(actionArgs);
-      const ctx = await contextFromCommand(command);
-      const memberId = parseCreatedByMemberId(options.member);
+    .action(
+      withCommandContext(
+        async (ctx, endpoint: string, id: string, options: CreatedBySetOptions) => {
+          const memberId = parseCreatedByMemberId(options.member);
 
-      if (options.dryRun) {
-        printSuccess(ctx, {
-          dryRun: true,
-          operation: "content.created-by.set",
-          endpoint,
-          id,
-          memberId,
-        });
-        return;
-      }
+          if (options.dryRun) {
+            printSuccess(ctx, {
+              dryRun: true,
+              operation: "content.created-by.set",
+              endpoint,
+              id,
+              memberId,
+            });
+            return;
+          }
 
-      const result = await patchContentCreatedBy(ctx, endpoint, id, memberId);
-      printSuccess(ctx, result.data, result.requestId);
-    });
+          const result = await patchContentCreatedBy(ctx, endpoint, id, memberId);
+          printSuccess(ctx, result.data, result.requestId);
+        },
+      ),
+    );
 }
 
 function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
@@ -296,30 +284,42 @@ function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> 
   ) as Partial<T>;
 }
 
-async function listContentAll(
+type ListContentQuery = Partial<{
+  limit: number;
+  offset: number;
+  orders: string;
+  q: string;
+  filters: string;
+  fields: string;
+  ids: string;
+  depth: number;
+  draftKey: string;
+}>;
+
+const MAX_ALL_PAGES = 10_000;
+const DEFAULT_MAX_ALL_ITEMS = 100_000;
+
+type ListFetcher = (
+  queries: ListContentQuery,
+) => Promise<{ data: unknown; requestId: string | null }>;
+
+export async function listContentAllWithFetcher(
   ctx: RuntimeContext,
   endpoint: string,
-  queries: Partial<{
-    limit: number;
-    offset: number;
-    orders: string;
-    q: string;
-    filters: string;
-    fields: string;
-    ids: string;
-    depth: number;
-    draftKey: string;
-  }>,
+  queries: ListContentQuery,
+  fetchList: ListFetcher,
 ): Promise<{ data: unknown; requestId: string | null }> {
+  const maxItems = resolveMaxAllItems();
   const pageSize = queries.limit ?? 100;
   let offset = queries.offset ?? 0;
   const startOffset = offset;
   const mergedContents: unknown[] = [];
   let requestId: string | null = null;
   let totalCount: number | undefined;
+  let completed = false;
 
-  for (let i = 0; i < 10_000; i += 1) {
-    const result = await listContent(ctx, endpoint, {
+  for (let i = 0; i < MAX_ALL_PAGES; i += 1) {
+    const result = await fetchList({
       ...queries,
       limit: pageSize,
       offset,
@@ -335,14 +335,62 @@ async function listContentAll(
       });
     }
 
-    totalCount = page.totalCount;
+    if (totalCount === undefined) {
+      totalCount = page.totalCount;
+    } else if (page.totalCount !== totalCount) {
+      throw new CliError({
+        code: "API_ERROR",
+        message:
+          "--all detected inconsistent `totalCount` between pages. Stop and rerun without --all.",
+        exitCode: EXIT_CODE.UNKNOWN,
+        details: ctx.verbose
+          ? {
+              endpoint,
+              previousTotalCount: totalCount,
+              currentTotalCount: page.totalCount,
+              offset,
+            }
+          : undefined,
+      });
+    }
+
     mergedContents.push(...page.contents);
 
+    if (mergedContents.length > maxItems) {
+      throw new CliError({
+        code: "API_ERROR",
+        message: `--all exceeded safety limit (${maxItems} items). Narrow filters or disable --all.`,
+        exitCode: EXIT_CODE.UNKNOWN,
+        details: ctx.verbose
+          ? {
+              endpoint,
+              mergedCount: mergedContents.length,
+              limit: maxItems,
+            }
+          : undefined,
+      });
+    }
+
     if (mergedContents.length >= totalCount || page.contents.length === 0) {
+      completed = true;
       break;
     }
 
     offset += page.contents.length;
+  }
+
+  if (!completed) {
+    throw new CliError({
+      code: "API_ERROR",
+      message: `--all stopped after ${MAX_ALL_PAGES} pages (safety cap). Narrow filters or lower result size.`,
+      exitCode: EXIT_CODE.UNKNOWN,
+      details: ctx.verbose
+        ? {
+            endpoint,
+            pages: MAX_ALL_PAGES,
+          }
+        : undefined,
+    });
   }
 
   return {
@@ -354,6 +402,24 @@ async function listContentAll(
     },
     requestId,
   };
+}
+
+function resolveMaxAllItems(): number {
+  const raw = process.env.MICROCMS_CONTENT_ALL_MAX_ITEMS;
+  if (!raw) {
+    return DEFAULT_MAX_ALL_ITEMS;
+  }
+
+  if (!/^\d+$/.test(raw.trim())) {
+    return DEFAULT_MAX_ALL_ITEMS;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_MAX_ALL_ITEMS;
+  }
+
+  return parsed;
 }
 
 function parseListShape(data: unknown): {
