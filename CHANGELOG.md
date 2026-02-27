@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-02-27
+
 ### Added
 - `src/core/api-field-utils.ts` to centralize API field extraction, kind normalization, and allowed-value parsing shared by schema/type generation and payload validation.
 - New safety checks for `content list --all`: inconsistent `totalCount` detection, merged item safety limit (default `100000`, configurable via `MICROCMS_CONTENT_ALL_MAX_ITEMS`), and max page cap errors.
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored command action handlers to typed signatures using shared command-context wiring, removing `actionArgs[...] as ...` patterns across command modules.
 - Moved environment override values (`MICROCMS_*_BASE_URL`, `MICROCMS_CONTENT_MOCK_FILE`) into `RuntimeContext`-backed runtime resolution to improve testability and consistency.
 - Simplified prompt API key input by using keypress event handling from Node's readline support while preserving no-echo TTY behavior.
+- Added README guidance recommending `wato787/microcms-cli` when type generation is the primary goal.
 
 ### Fixed
 - Standardized delete response shaping for content operations so JSON envelope compatibility is preserved while request-id propagation remains available.
