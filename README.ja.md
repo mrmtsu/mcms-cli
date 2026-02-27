@@ -121,6 +121,9 @@ microcms schema pull --out microcms-schema.json --json
 microcms types generate --schema microcms-schema.json --out microcms-types.d.ts --json
 ```
 
+型生成を主目的に使う場合は、[wato787/microcms-cli](https://github.com/wato787/microcms-cli) の利用を推奨します。  
+リレーション解決、リピーターの discriminated union、カスタムフィールドの再帰展開など、複雑なスキーマの型生成に優れています。
+
 ### 設定と補完
 
 ```bash

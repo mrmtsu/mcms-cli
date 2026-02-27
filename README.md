@@ -121,6 +121,9 @@ microcms schema pull --out microcms-schema.json --json
 microcms types generate --schema microcms-schema.json --out microcms-types.d.ts --json
 ```
 
+If type generation is your primary goal, we recommend using [wato787/microcms-cli](https://github.com/wato787/microcms-cli).  
+It provides strong coverage for complex schemas, including relation resolution, discriminated unions for repeaters, and recursive custom field typing.
+
 ### Config and completion
 
 ```bash
