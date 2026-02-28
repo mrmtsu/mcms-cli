@@ -24,6 +24,14 @@ npm i -g @mrmtsu/mcms-cli
 npx @mrmtsu/mcms-cli --help
 ```
 
+## Agent Skill
+
+This repository includes a Codex/Claude-compatible skill at `skills/mcms-cli/SKILL.md`.
+
+```bash
+npx skills add mrmtsu/mcms-cli --skill mcms-cli
+```
+
 ## FAQ
 
 ### Is this the official microCMS CLI?
