@@ -24,6 +24,14 @@ npm i -g @mrmtsu/mcms-cli
 npx @mrmtsu/mcms-cli --help
 ```
 
+## Agent Skill
+
+このリポジトリには Codex/Claude 互換のスキル `skills/mcms-cli/SKILL.md` を同梱しています。
+
+```bash
+npx skills add mrmtsu/mcms-cli --skill mcms-cli
+```
+
 ## FAQ
 
 ### これは microCMS 公式の CLI ですか？
