@@ -117,6 +117,11 @@ export async function patchContentStatus(
   status: "PUBLISH" | "DRAFT",
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
+  const mockFilePath = getContentMockFilePath(ctx);
+  if (mockFilePath) {
+    return runMockPatchStatus(mockFilePath, endpoint, contentId, status, ctx.verbose);
+  }
+
   const url = buildApiUrl(getManagementBaseUrl(ctx), ["contents", endpoint, contentId, "status"]);
   const result = await requestJson<unknown>({
     url,
@@ -255,6 +260,11 @@ export async function listApis(
   ctx: RuntimeContext,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
+  const mockFilePath = getContentMockFilePath(ctx);
+  if (mockFilePath) {
+    return runMockListApis(mockFilePath, ctx.verbose);
+  }
+
   const url = buildApiUrl(getManagementBaseUrl(ctx), ["apis"]);
   const result = await requestJson<unknown>({
     url,
@@ -273,6 +283,11 @@ export async function getApiInfo(
   endpoint: string,
 ): Promise<{ data: unknown; requestId: string | null }> {
   assertAuth(ctx);
+  const mockFilePath = getContentMockFilePath(ctx);
+  if (mockFilePath) {
+    return runMockGetApiInfo(mockFilePath, endpoint, ctx.verbose);
+  }
+
   const url = buildApiUrl(getManagementBaseUrl(ctx), ["apis", endpoint]);
   const result = await requestJson<unknown>({
     url,
@@ -513,6 +528,8 @@ function normalizeBaseUrlOverride(name: string, value: string, allowedDomains: s
 type MockContentStore = {
   nextId: number;
   endpoints: Record<string, Record<string, Record<string, unknown>>>;
+  schemas?: Record<string, Record<string, unknown>>;
+  drafts?: Record<string, Record<string, Record<string, Record<string, unknown>>>>;
 };
 
 async function runMockList(
@@ -539,14 +556,88 @@ async function runMockList(
   };
 }
 
+async function runMockListApis(
+  mockFilePath: string,
+  verbose = false,
+): Promise<{ data: unknown; requestId: string }> {
+  const store = await readMockStore(mockFilePath, verbose);
+  const endpoints = [
+    ...new Set([
+      ...Object.keys(store.endpoints),
+      ...Object.keys(store.schemas ?? {}),
+      ...Object.keys(store.drafts ?? {}),
+    ]),
+  ].sort((a, b) => a.localeCompare(b));
+
+  return {
+    data: {
+      contents: endpoints.map((endpoint) => ({ endpoint })),
+      totalCount: endpoints.length,
+    },
+    requestId: "mock-file-request",
+  };
+}
+
+async function runMockGetApiInfo(
+  mockFilePath: string,
+  endpoint: string,
+  verbose = false,
+): Promise<{ data: unknown; requestId: string }> {
+  const store = await readMockStore(mockFilePath, verbose);
+  const schema = store.schemas?.[endpoint];
+  if (isRecord(schema)) {
+    return {
+      data: schema,
+      requestId: "mock-file-request",
+    };
+  }
+
+  const endpointStore = store.endpoints[endpoint];
+  if (!endpointStore) {
+    throw fromHttpStatus(404, "mock api not found", { endpoint });
+  }
+
+  return {
+    data: {
+      endpoint,
+      apiFields: inferMockApiFields(endpointStore),
+    },
+    requestId: "mock-file-request",
+  };
+}
+
 async function runMockGet(
   mockFilePath: string,
   endpoint: string,
   contentId: string,
-  _queries?: Record<string, unknown>,
+  queries?: Record<string, unknown>,
   verbose = false,
 ): Promise<{ data: unknown; requestId: string }> {
   const store = await readMockStore(mockFilePath, verbose);
+  const draftKey =
+    typeof queries?.draftKey === "string" && queries.draftKey.trim().length > 0
+      ? queries.draftKey.trim()
+      : null;
+
+  if (draftKey) {
+    const draftHit = store.drafts?.[endpoint]?.[contentId]?.[draftKey];
+    if (!draftHit) {
+      throw fromHttpStatus(404, "mock draft content not found", {
+        endpoint,
+        contentId,
+        draftKey,
+      });
+    }
+
+    return {
+      data: {
+        id: contentId,
+        ...draftHit,
+      },
+      requestId: "mock-file-request",
+    };
+  }
+
   const endpointStore = store.endpoints[endpoint] ?? {};
   const hit = endpointStore[contentId];
   if (!hit) {
@@ -649,6 +740,38 @@ async function runMockDelete(
   };
 }
 
+async function runMockPatchStatus(
+  mockFilePath: string,
+  endpoint: string,
+  contentId: string,
+  status: "PUBLISH" | "DRAFT",
+  verbose = false,
+): Promise<{ data: unknown; requestId: string }> {
+  const store = await readMockStore(mockFilePath, verbose);
+  const endpointStore = store.endpoints[endpoint] ?? {};
+  if (!endpointStore[contentId]) {
+    throw fromHttpStatus(404, "mock content not found", {
+      endpoint,
+      contentId,
+    });
+  }
+
+  endpointStore[contentId] = {
+    ...endpointStore[contentId],
+    _status: status,
+  };
+  store.endpoints[endpoint] = endpointStore;
+  await writeMockStore(mockFilePath, store);
+
+  return {
+    data: {
+      id: contentId,
+      status: [status],
+    },
+    requestId: "mock-file-request",
+  };
+}
+
 async function readMockStore(path: string, verbose = false): Promise<MockContentStore> {
   try {
     const raw = await readFile(path, "utf8");
@@ -657,12 +780,16 @@ async function readMockStore(path: string, verbose = false): Promise<MockContent
       nextId: typeof parsed.nextId === "number" ? parsed.nextId : 1,
       endpoints:
         typeof parsed.endpoints === "object" && parsed.endpoints !== null ? parsed.endpoints : {},
+      schemas: typeof parsed.schemas === "object" && parsed.schemas !== null ? parsed.schemas : {},
+      drafts: typeof parsed.drafts === "object" && parsed.drafts !== null ? parsed.drafts : {},
     };
   } catch (error) {
     logVerbose(verbose, `failed to read mock store ${path}; using empty fallback store`, error);
     return {
       nextId: 1,
       endpoints: {},
+      schemas: {},
+      drafts: {},
     };
   }
 }
@@ -678,6 +805,52 @@ function logVerbose(verbose: boolean, message: string, error: unknown): void {
 
   const detail = error instanceof Error ? error.message : String(error);
   process.stderr.write(`[client] ${message}: ${detail}\n`);
+}
+
+function inferMockApiFields(
+  endpointStore: Record<string, Record<string, unknown>>,
+): Array<{ fieldId: string; kind: string }> {
+  const first = Object.values(endpointStore)[0];
+  if (!first || !isRecord(first)) {
+    return [];
+  }
+
+  return Object.entries(first).map(([fieldId, value]) => ({
+    fieldId,
+    kind: inferMockFieldKind(value),
+  }));
+}
+
+function inferMockFieldKind(value: unknown): string {
+  if (typeof value === "string") {
+    return "text";
+  }
+
+  if (typeof value === "number") {
+    return "number";
+  }
+
+  if (typeof value === "boolean") {
+    return "boolean";
+  }
+
+  if (Array.isArray(value)) {
+    return "array";
+  }
+
+  if (value === null) {
+    return "text";
+  }
+
+  if (typeof value === "object") {
+    return "object";
+  }
+
+  return "text";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function guessMediaContentType(path: string): string {

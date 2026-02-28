@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-02-28
+
+### Added
+- `content export` command with JSON/CSV output and `--all` mode for endpoint-wide exports.
+- `content import` command with `--upsert`, `--interval`, and schema-aware validation support.
+- `content diff` command to compare published content and draft content by `--draft-key`.
+- `content bulk` command for batch `create` / `update` / `delete` / `status` operations from a JSON operation file.
+- `schema diff` command for baseline-vs-remote schema comparison, including `--exit-code` for CI gating.
+- `types sync` command to fetch schema and generate TypeScript declarations in one step.
+- `content bulk --validate-payload` option to explicitly enable schema-based payload validation during bulk runs.
+
+### Changed
+- `content bulk --dry-run` now validates operation-file structure without requiring API access; payload/schema checks run only with `--validate-payload` (or `--strict-warnings`).
+- `content bulk` now supports explicit `--stop-on-error` (default behavior), and rejects conflicting `--stop-on-error` + `--continue-on-error`.
+- `content export --all` now skips object APIs and reports them in `skipped` metadata, focusing export output on list-style endpoints.
+- `content import` and `content bulk` now emit progress lines in non-JSON mode.
+- Command spec and completion metadata were updated to include new command/options exposure (`content export/import/diff/bulk`, `schema diff`, `types sync`, `content bulk --validate-payload`).
+
+### Fixed
+- Corrected `content import` validation error messaging to differentiate dry-run validation failures from non-dry-run payload validation failures.
+- Improved request-id propagation in `content bulk --dry-run` responses when schema validation is executed.
+
+### Tests
+- Added/expanded e2e coverage for `content export`, `content import`, `content bulk`, `content diff`, `schema diff`, and `types sync`.
+- Added contract/spec assertions for newly introduced commands and options (including `--stop-on-error`, `--validate-payload`, and `types generate --endpoints`).
+
 ## [0.3.1] - 2026-02-27
 
 ### Added

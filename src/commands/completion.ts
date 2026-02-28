@@ -280,7 +280,7 @@ _microcms_complete() {
       if [[ \${COMP_CWORD} -eq 3 ]]; then
         COMPREPLY=( $(compgen -W "$( _microcms_endpoint_candidates )" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "list get create update delete meta status created-by" -- "$cur") )
+        COMPREPLY=( $(compgen -W "list get diff create update delete export import bulk meta status created-by" -- "$cur") )
       fi
       ;;
     docs)
@@ -296,10 +296,10 @@ _microcms_complete() {
       COMPREPLY=( $(compgen -W "doctor" -- "$cur") )
       ;;
     schema)
-      COMPREPLY=( $(compgen -W "pull" -- "$cur") )
+      COMPREPLY=( $(compgen -W "pull diff" -- "$cur") )
       ;;
     types)
-      COMPREPLY=( $(compgen -W "generate" -- "$cur") )
+      COMPREPLY=( $(compgen -W "generate sync" -- "$cur") )
       ;;
     completion)
       COMPREPLY=( $(compgen -W "install uninstall bash zsh fish" -- "$cur") )
@@ -378,7 +378,7 @@ _microcms() {
           _values 'api command' list info
           ;;
         content)
-          _values 'content command' list get create update delete meta status created-by
+          _values 'content command' list get diff create update delete export import bulk meta status created-by
           ;;
         docs)
           _values 'docs command' list get
@@ -393,10 +393,10 @@ _microcms() {
           _values 'config command' doctor
           ;;
         schema)
-          _values 'schema command' pull
+          _values 'schema command' pull diff
           ;;
         types)
-          _values 'types command' generate
+          _values 'types command' generate sync
           ;;
         completion)
           _values 'completion command' install uninstall bash zsh fish
@@ -430,13 +430,13 @@ complete -c microcms -n '__fish_use_subcommand' -a 'api auth config completion c
 
 complete -c microcms -n '__fish_seen_subcommand_from auth' -a 'login status profile'
 complete -c microcms -n '__fish_seen_subcommand_from api' -a 'list info'
-complete -c microcms -n '__fish_seen_subcommand_from content' -a 'list get create update delete meta status created-by'
+complete -c microcms -n '__fish_seen_subcommand_from content' -a 'list get diff create update delete export import bulk meta status created-by'
 complete -c microcms -n '__fish_seen_subcommand_from docs' -a 'list get'
 complete -c microcms -n '__fish_seen_subcommand_from media' -a 'list upload delete'
 complete -c microcms -n '__fish_seen_subcommand_from member' -a 'get'
 complete -c microcms -n '__fish_seen_subcommand_from config' -a 'doctor'
-complete -c microcms -n '__fish_seen_subcommand_from schema' -a 'pull'
-complete -c microcms -n '__fish_seen_subcommand_from types' -a 'generate'
+complete -c microcms -n '__fish_seen_subcommand_from schema' -a 'pull diff'
+complete -c microcms -n '__fish_seen_subcommand_from types' -a 'generate sync'
 complete -c microcms -n '__fish_seen_subcommand_from completion' -a 'install uninstall bash zsh fish'
 
 complete -c microcms -n '__fish_seen_subcommand_from api; and __fish_seen_subcommand_from info; and __fish_is_nth_token 3' -a '(microcms completion endpoints 2>/dev/null)'
