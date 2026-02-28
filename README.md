@@ -92,6 +92,20 @@ microcms content create <endpoint> --file payload.json --json
 microcms content create <endpoint> --file payload.json --dry-run --json
 microcms content update <endpoint> <id> --file payload.json --json
 microcms content delete <endpoint> <id> --json
+microcms content diff <endpoint> <id> --draft-key <draftKey> --json
+microcms content export <endpoint> --out backup/notes.json --json
+microcms content export <endpoint> --out backup/notes.csv --format csv --json
+microcms content export --all --out backup/ --json
+microcms content import <endpoint> --file backup/notes.json --json
+microcms content import <endpoint> --file backup/notes.json --dry-run --json
+microcms content import <endpoint> --file backup/notes.json --dry-run --strict-warnings --json
+microcms content import <endpoint> --file backup/notes.json --upsert --interval 200 --json
+microcms content bulk --file operations.json --json
+microcms content bulk --file operations.json --dry-run --json
+microcms content bulk --file operations.json --dry-run --validate-payload --json
+microcms content bulk --file operations.json --dry-run --strict-warnings --json
+microcms content bulk --file operations.json --stop-on-error --json
+microcms content bulk --file operations.json --continue-on-error --json
 
 microcms media list --json
 microcms media list --limit 20 --image-only --file-name logo --json
@@ -101,6 +115,10 @@ microcms media upload <path> --dry-run --json
 microcms media delete --url <media-url> --json
 microcms validate <endpoint> --file payload.json --json
 ```
+
+- `content export --all` exports list APIs. Object APIs are skipped.
+- `content bulk --dry-run` checks operation-file structure without API calls.
+- Add `--validate-payload` (or `--strict-warnings`) when you want schema-based payload checks.
 
 ### Docs and Agent references (no API key / service domain required)
 
@@ -118,7 +136,11 @@ microcms spec --json
 
 ```bash
 microcms schema pull --out microcms-schema.json --json
+microcms schema diff --baseline microcms-schema.json --json
+microcms schema diff --baseline microcms-schema.json --exit-code --json
 microcms types generate --schema microcms-schema.json --out microcms-types.d.ts --json
+microcms types sync --out microcms-types.d.ts --json
+microcms types sync --out microcms-types.d.ts --schema-out microcms-schema.json --json
 ```
 
 If type generation is your primary goal, we recommend using [wato787/microcms-cli](https://github.com/wato787/microcms-cli).  

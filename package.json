@@ -1,6 +1,6 @@
 {
   "name": "@mrmtsu/mcms-cli",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Unofficial microCMS CLI for Content API and Management API automation (AI/CI friendly)",
   "license": "MIT",
   "homepage": "https://github.com/mrmtsu/mcms-cli#readme",

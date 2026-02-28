@@ -40,6 +40,47 @@ export type GeneratedTypesResult = {
   warnings: string[];
 };
 
+export type SchemaFieldSnapshot = {
+  fieldId: string;
+  kind: string | null;
+  required: boolean;
+  allowedValues: string[];
+};
+
+export type SchemaFieldChange = {
+  key: "kind" | "required" | "allowedValues";
+  before: string | boolean | string[] | null;
+  after: string | boolean | string[] | null;
+};
+
+export type SchemaFieldDiff = {
+  fieldId: string;
+  changes: SchemaFieldChange[];
+  before: SchemaFieldSnapshot;
+  after: SchemaFieldSnapshot;
+};
+
+export type SchemaEndpointDiff = {
+  endpoint: string;
+  added: string[];
+  removed: string[];
+  changed: SchemaFieldDiff[];
+};
+
+export type SchemaDiffResult = {
+  hasDiff: boolean;
+  summary: {
+    endpointsAdded: number;
+    endpointsRemoved: number;
+    fieldsAdded: number;
+    fieldsRemoved: number;
+    fieldsChanged: number;
+  };
+  endpointsAdded: string[];
+  endpointsRemoved: string[];
+  endpoints: SchemaEndpointDiff[];
+};
+
 export function buildSchemaBundle(params: {
   serviceDomain?: string;
   apis: Array<{ endpoint: string; api: unknown }>;
@@ -59,6 +100,49 @@ export function extractApiEndpoints(data: unknown): string[] {
     .filter((value): value is string => value !== null);
 
   return [...new Set(endpoints)].sort((a, b) => a.localeCompare(b));
+}
+
+export function diffSchemaBundles(baselineInput: unknown, currentInput: unknown): SchemaDiffResult {
+  const baselineSchemas = normalizeSchemas(baselineInput);
+  const currentSchemas = normalizeSchemas(currentInput);
+  const baselineMap = new Map(baselineSchemas.map((item) => [item.endpoint, item.api]));
+  const currentMap = new Map(currentSchemas.map((item) => [item.endpoint, item.api]));
+
+  const baselineEndpoints = [...baselineMap.keys()].sort((a, b) => a.localeCompare(b));
+  const currentEndpoints = [...currentMap.keys()].sort((a, b) => a.localeCompare(b));
+
+  const endpointsAdded = currentEndpoints.filter((endpoint) => !baselineMap.has(endpoint));
+  const endpointsRemoved = baselineEndpoints.filter((endpoint) => !currentMap.has(endpoint));
+  const commonEndpoints = currentEndpoints.filter((endpoint) => baselineMap.has(endpoint));
+
+  const endpointDiffs = commonEndpoints
+    .map((endpoint) => {
+      const baselineFields = buildComparableFieldMap(baselineMap.get(endpoint));
+      const currentFields = buildComparableFieldMap(currentMap.get(endpoint));
+      return diffEndpointFields(endpoint, baselineFields, currentFields);
+    })
+    .filter(
+      (entry) => entry.added.length > 0 || entry.removed.length > 0 || entry.changed.length > 0,
+    );
+
+  const summary = {
+    endpointsAdded: endpointsAdded.length,
+    endpointsRemoved: endpointsRemoved.length,
+    fieldsAdded: endpointDiffs.reduce((sum, entry) => sum + entry.added.length, 0),
+    fieldsRemoved: endpointDiffs.reduce((sum, entry) => sum + entry.removed.length, 0),
+    fieldsChanged: endpointDiffs.reduce((sum, entry) => sum + entry.changed.length, 0),
+  };
+
+  const hasDiff =
+    endpointsAdded.length > 0 || endpointsRemoved.length > 0 || endpointDiffs.length > 0;
+
+  return {
+    hasDiff,
+    summary,
+    endpointsAdded,
+    endpointsRemoved,
+    endpoints: endpointDiffs,
+  };
 }
 
 export function generateTypesFromSchema(input: unknown): GeneratedTypesResult {
@@ -166,6 +250,89 @@ function normalizeSchemas(input: unknown): NormalizedApiSchema[] {
   }
 
   return [];
+}
+
+function buildComparableFieldMap(input: unknown): Map<string, SchemaFieldSnapshot> {
+  const fields = extractApiFields(input) as ApiField[];
+  const map = new Map<string, SchemaFieldSnapshot>();
+
+  for (const field of fields) {
+    const fieldId = normalizeString(field.fieldId);
+    if (!fieldId) {
+      continue;
+    }
+
+    const kind =
+      normalizeKind(field.type) ??
+      normalizeKind(field.fieldType) ??
+      normalizeKind(field.inputType) ??
+      normalizeKind(field.kind);
+    const allowedValues = extractAllowedValues(field).sort((a, b) => a.localeCompare(b));
+
+    map.set(fieldId, {
+      fieldId,
+      kind,
+      required: Boolean(field.required),
+      allowedValues,
+    });
+  }
+
+  return map;
+}
+
+function diffEndpointFields(
+  endpoint: string,
+  baselineFields: Map<string, SchemaFieldSnapshot>,
+  currentFields: Map<string, SchemaFieldSnapshot>,
+): SchemaEndpointDiff {
+  const baselineIds = [...baselineFields.keys()].sort((a, b) => a.localeCompare(b));
+  const currentIds = [...currentFields.keys()].sort((a, b) => a.localeCompare(b));
+  const added = currentIds.filter((fieldId) => !baselineFields.has(fieldId));
+  const removed = baselineIds.filter((fieldId) => !currentFields.has(fieldId));
+
+  const changed = currentIds
+    .filter((fieldId) => baselineFields.has(fieldId))
+    .map((fieldId) => {
+      const before = baselineFields.get(fieldId);
+      const after = currentFields.get(fieldId);
+      if (!before || !after) {
+        return null;
+      }
+
+      const changes: SchemaFieldChange[] = [];
+      if (before.kind !== after.kind) {
+        changes.push({ key: "kind", before: before.kind, after: after.kind });
+      }
+      if (before.required !== after.required) {
+        changes.push({ key: "required", before: before.required, after: after.required });
+      }
+      if (!isStringArrayEqual(before.allowedValues, after.allowedValues)) {
+        changes.push({
+          key: "allowedValues",
+          before: before.allowedValues,
+          after: after.allowedValues,
+        });
+      }
+
+      if (changes.length === 0) {
+        return null;
+      }
+
+      return {
+        fieldId,
+        changes,
+        before,
+        after,
+      };
+    })
+    .filter((entry): entry is SchemaFieldDiff => entry !== null);
+
+  return {
+    endpoint,
+    added,
+    removed,
+    changed,
+  };
 }
 
 function tryExtractBundleSchemas(input: unknown): NormalizedApiSchema[] {
@@ -375,4 +542,18 @@ function uniqueTypeName(base: string, used: Set<string>): string {
 
 function isTsIdentifier(value: string): boolean {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(value);
+}
+
+function isStringArrayEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+
+  return true;
 }

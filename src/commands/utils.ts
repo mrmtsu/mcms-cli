@@ -65,6 +65,23 @@ export function parseIntegerOption(
   return parsed;
 }
 
+export function parseIntervalOption(
+  value: string | undefined,
+  options?: { name?: string; min?: number; max?: number; defaultValue?: number },
+): number {
+  const name = options?.name ?? "interval";
+  const min = options?.min ?? 0;
+  const max = options?.max ?? 60_000;
+  const defaultValue = options?.defaultValue ?? 0;
+  return parseIntegerOption(name, value, { min, max }) ?? defaultValue;
+}
+
+export async function sleepMs(ms: number): Promise<void> {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function invalidInteger(name: string, value: string, expected: string): CliError {
   return new CliError({
     code: "INVALID_INPUT",

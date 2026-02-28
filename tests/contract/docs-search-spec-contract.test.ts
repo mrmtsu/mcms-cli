@@ -58,8 +58,49 @@ describe("docs/search/spec contract", () => {
     ).toBe(true);
     expect(
       (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "content export",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "content import",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "content diff",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "content bulk",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
         (command) => command.path === "media delete",
       ),
     ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "schema diff",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "types sync",
+      ),
+    ).toBe(true);
+
+    const contentBulk = (
+      specBody.data.commands as Array<{ path?: string; options?: string[] }>
+    ).find((command) => command.path === "content bulk");
+    expect(contentBulk?.options).toContain("--stop-on-error");
+    expect(contentBulk?.options).toContain("--validate-payload");
+
+    const typesGenerate = (
+      specBody.data.commands as Array<{ path?: string; options?: string[] }>
+    ).find((command) => command.path === "types generate");
+    expect(typesGenerate?.options).toContain("--endpoints <list>");
   });
 });

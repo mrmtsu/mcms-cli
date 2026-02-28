@@ -49,9 +49,13 @@ describe("config doctor and completion commands", () => {
     expect(script).toContain(
       'local roots="api auth config completion content docs media member schema search spec types validate help"',
     );
-    expect(script).toContain('compgen -W "list get create update delete meta status created-by"');
+    expect(script).toContain(
+      'compgen -W "list get diff create update delete export import bulk meta status created-by"',
+    );
     expect(script).toContain('compgen -W "list upload delete"');
     expect(script).toContain('compgen -W "get"');
+    expect(script).toContain('compgen -W "pull diff"');
+    expect(script).toContain('compgen -W "generate sync"');
 
     const uninstallResult = runCli(["completion", "uninstall", "--json"], env);
     expect(uninstallResult.code).toBe(0);

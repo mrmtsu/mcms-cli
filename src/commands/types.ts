@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { Command } from "commander";
 import { getApiInfo, listApis } from "../core/client.js";
+import type { RuntimeContext } from "../core/context.js";
 import { readJsonFile } from "../core/io.js";
 import { buildSchemaBundle, extractApiEndpoints, generateTypesFromSchema } from "../core/schema.js";
 import { CliError } from "../core/errors.js";
@@ -12,6 +13,12 @@ import { withCommandContext } from "./utils.js";
 type GenerateOptions = {
   schema?: string;
   out?: string;
+  endpoints?: string;
+};
+
+type SyncOptions = {
+  out?: string;
+  schemaOut?: string;
   endpoints?: string;
 };
 
@@ -33,34 +40,14 @@ export function registerTypesCommands(program: Command): void {
           source = await readJsonFile(options.schema);
         } else {
           const selectedEndpoints = parseEndpointsOption(options.endpoints);
-          let endpoints: string[];
-
-          if (selectedEndpoints.length > 0) {
-            endpoints = selectedEndpoints;
-          } else {
-            const listed = await listApis(ctx);
-            requestId = listed.requestId;
-            endpoints = extractApiEndpoints(listed.data);
-          }
-
-          if (endpoints.length === 0) {
-            throw new CliError({
-              code: "INVALID_INPUT",
-              message: "No endpoints were found. Specify --endpoints or provide --schema.",
-              exitCode: EXIT_CODE.INVALID_INPUT,
-            });
-          }
-
-          const apis: Array<{ endpoint: string; api: unknown }> = [];
-          for (const endpoint of endpoints) {
-            const info = await getApiInfo(ctx, endpoint);
-            requestId = info.requestId ?? requestId;
-            apis.push({ endpoint, api: info.data });
-          }
+          const pulled = await pullRemoteSchemas(ctx, selectedEndpoints, {
+            emptyMessage: "No endpoints were found. Specify --endpoints or provide --schema.",
+          });
+          requestId = pulled.requestId;
 
           source = buildSchemaBundle({
             serviceDomain: ctx.serviceDomain,
-            apis,
+            apis: pulled.apis,
           });
         }
 
@@ -89,6 +76,55 @@ export function registerTypesCommands(program: Command): void {
         );
       }),
     );
+
+  types
+    .command("sync")
+    .description("Fetch schema and generate TypeScript types in one command")
+    .option("--out <path>", "output declaration file", "microcms-types.d.ts")
+    .option("--schema-out <path>", "save pulled schema JSON to this path")
+    .option("--endpoints <list>", "comma-separated endpoints to fetch")
+    .action(
+      withCommandContext(async (ctx, options: SyncOptions) => {
+        const selectedEndpoints = parseEndpointsOption(options.endpoints);
+        const pulled = await pullRemoteSchemas(ctx, selectedEndpoints, {
+          emptyMessage: "No endpoints were found. Specify --endpoints or check API permissions.",
+        });
+
+        const schemaBundle = buildSchemaBundle({
+          serviceDomain: ctx.serviceDomain,
+          apis: pulled.apis,
+        });
+        const generated = generateTypesFromSchema(schemaBundle);
+        if (generated.endpointCount === 0) {
+          throw new CliError({
+            code: "INVALID_INPUT",
+            message: "No schema entries were found to generate types.",
+            exitCode: EXIT_CODE.INVALID_INPUT,
+          });
+        }
+
+        const outPath = options.out ?? "microcms-types.d.ts";
+        await mkdir(dirname(outPath), { recursive: true });
+        await writeFile(outPath, generated.code, "utf8");
+
+        if (options.schemaOut) {
+          await mkdir(dirname(options.schemaOut), { recursive: true });
+          await writeFile(options.schemaOut, JSON.stringify(schemaBundle, null, 2), "utf8");
+        }
+
+        printSuccess(
+          ctx,
+          {
+            out: outPath,
+            schemaOut: options.schemaOut ?? null,
+            endpointCount: generated.endpointCount,
+            warnings: generated.warnings,
+            source: "management_api",
+          },
+          pulled.requestId,
+        );
+      }),
+    );
 }
 
 function parseEndpointsOption(value: string | undefined): string[] {
@@ -102,4 +138,44 @@ function parseEndpointsOption(value: string | undefined): string[] {
     .filter((endpoint) => endpoint.length > 0);
 
   return [...new Set(endpoints)];
+}
+
+async function pullRemoteSchemas(
+  ctx: RuntimeContext,
+  selectedEndpoints: string[],
+  options: { emptyMessage: string },
+): Promise<{
+  apis: Array<{ endpoint: string; api: unknown }>;
+  requestId: string | null;
+}> {
+  let requestId: string | null = null;
+  let endpoints: string[];
+
+  if (selectedEndpoints.length > 0) {
+    endpoints = selectedEndpoints;
+  } else {
+    const listed = await listApis(ctx);
+    requestId = listed.requestId;
+    endpoints = extractApiEndpoints(listed.data);
+  }
+
+  if (endpoints.length === 0) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: options.emptyMessage,
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  const apis: Array<{ endpoint: string; api: unknown }> = [];
+  for (const endpoint of endpoints) {
+    const info = await getApiInfo(ctx, endpoint);
+    requestId = info.requestId ?? requestId;
+    apis.push({ endpoint, api: info.data });
+  }
+
+  return {
+    apis,
+    requestId,
+  };
 }
