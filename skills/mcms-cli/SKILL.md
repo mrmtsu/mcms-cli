@@ -12,7 +12,9 @@ Always run microCMS write operations with `--json` and `--dry-run` first.
 ```bash
 microcms auth status --json
 microcms config doctor --json
-microcms schema pull --out microcms-schema.json --json
+microcms schema pull --out microcms-schema.json --json                    # microCMS proprietary format
+microcms schema pull --format json-schema --out schema.json --json        # JSON Schema (draft-07)
+microcms schema pull --format json-schema --include-extensions --out schema.json --json
 microcms validate blogs --file payload.json --json
 microcms content create blogs --file payload.json --dry-run --json
 microcms content create blogs --file payload.json --json
