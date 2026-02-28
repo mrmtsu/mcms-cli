@@ -144,6 +144,9 @@ microcms spec --json
 
 ```bash
 microcms schema pull --out microcms-schema.json --json
+microcms schema pull --format json-schema --out schema.json --json
+microcms schema pull --format json-schema --include-extensions --out schema.json --json
+microcms schema pull --format json-schema --endpoints blogs --out blogs-schema.json --json
 microcms schema diff --baseline microcms-schema.json --json
 microcms schema diff --baseline microcms-schema.json --exit-code --json
 microcms types generate --schema microcms-schema.json --out microcms-types.d.ts --json
@@ -151,7 +154,9 @@ microcms types sync --out microcms-types.d.ts --json
 microcms types sync --out microcms-types.d.ts --schema-out microcms-schema.json --json
 ```
 
-If type generation is your primary goal, we recommend using [wato787/microcms-cli](https://github.com/wato787/microcms-cli).  
+`--format json-schema` uses [`@mrmtsu/microcms-schema-adapter`](https://github.com/mrmtsu/microcms-schema-adapter) to convert microCMS schemas to JSON Schema (draft-07).
+
+If type generation is your primary goal, we recommend using [wato787/microcms-cli](https://github.com/wato787/microcms-cli).
 It provides strong coverage for complex schemas, including relation resolution, discriminated unions for repeaters, and recursive custom field typing.
 
 ### Config and completion

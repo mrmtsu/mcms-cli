@@ -315,7 +315,7 @@ const COMMANDS: CommandSpec[] = [
     path: "schema pull",
     description: "fetch API schema metadata and save to file",
     args: [],
-    options: ["--out <path>", "--endpoints <list>"],
+    options: ["--out <path>", "--endpoints <list>", "--format <format>", "--include-extensions"],
     readOnly: true,
   },
   {
