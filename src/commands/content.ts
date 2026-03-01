@@ -21,7 +21,7 @@ import { assertObjectPayload, readJsonFile } from "../core/io.js";
 import { printSuccess } from "../core/output.js";
 import { extractApiEndpoints } from "../core/schema.js";
 import { parseBulkOperations, type BulkOperation } from "../validation/bulk-operations.js";
-import { validatePayload } from "../validation/payload.js";
+import { validatePayload, type ValidationIssue } from "../validation/payload.js";
 import { parseIntegerOption, parseIntervalOption, sleepMs, withCommandContext } from "./utils.js";
 
 type ListOptions = {
@@ -213,6 +213,7 @@ export function registerContentCommands(program: Command): void {
           valid: boolean;
           errors: string[];
           warnings: string[];
+          issues: ValidationIssue[];
         }> = [];
 
         if (shouldValidate) {
@@ -229,18 +230,24 @@ export function registerContentCommands(program: Command): void {
               valid,
               errors: validation.errors,
               warnings: validation.warnings,
+              issues: validation.issues,
             };
           });
 
           const invalid = checks.filter((entry) => !entry.valid);
           if (invalid.length > 0) {
-            const message = options.dryRun
+            const baseMessage = options.dryRun
               ? "Import dry-run validation failed"
               : "Import payload validation failed";
+            const summary = summarizeImportValidationFailure(
+              invalid,
+              Boolean(options.strictWarnings),
+            );
             throw new CliError({
               code: "INVALID_INPUT",
-              message,
+              message: summary ? `${baseMessage}: ${summary}` : baseMessage,
               exitCode: EXIT_CODE.INVALID_INPUT,
+              detailsVisibility: "always",
               details: {
                 endpoint,
                 file: options.file,
@@ -420,16 +427,24 @@ export function registerContentCommands(program: Command): void {
                 valid,
                 errors: validation.errors,
                 warnings: validation.warnings,
+                issues: validation.issues,
               };
             })
             .filter((entry): entry is BulkValidationCheck => entry !== null);
 
           const invalid = checks.filter((entry) => !entry.valid);
           if (invalid.length > 0) {
+            const summary = summarizeBulkValidationFailure(
+              invalid,
+              Boolean(options.strictWarnings),
+            );
             throw new CliError({
               code: "INVALID_INPUT",
-              message: "Bulk payload validation failed",
+              message: summary
+                ? `Bulk payload validation failed: ${summary}`
+                : "Bulk payload validation failed",
               exitCode: EXIT_CODE.INVALID_INPUT,
+              detailsVisibility: "always",
               details: {
                 file: options.file,
                 invalidCount: invalid.length,
@@ -1517,6 +1532,7 @@ type BulkValidationCheck = {
   valid: boolean;
   errors: string[];
   warnings: string[];
+  issues: ValidationIssue[];
 };
 
 function parseBulkInterval(value: string | undefined): number {
@@ -1554,4 +1570,38 @@ async function executeBulkOperation(
     case "status":
       return patchContentStatus(ctx, operation.endpoint, operation.id, operation.status);
   }
+}
+
+function summarizeImportValidationFailure(
+  invalidItems: Array<{
+    index: number;
+    id: string | null;
+    errors: string[];
+    warnings: string[];
+  }>,
+  includeWarnings: boolean,
+): string {
+  const first = invalidItems[0];
+  const reasons = collectValidationReasons(first, includeWarnings);
+  const idLabel = first.id ? ` (id: ${first.id})` : "";
+  const reason = reasons[0] ?? "validation failed";
+  return `item #${first.index}${idLabel}: ${reason}`;
+}
+
+function summarizeBulkValidationFailure(
+  invalidItems: BulkValidationCheck[],
+  includeWarnings: boolean,
+): string {
+  const first = invalidItems[0];
+  const reasons = collectValidationReasons(first, includeWarnings);
+  const idLabel = first.id ? `/${first.id}` : "";
+  const reason = reasons[0] ?? "validation failed";
+  return `op #${first.index} (${first.action} ${first.endpoint}${idLabel}): ${reason}`;
+}
+
+function collectValidationReasons(
+  entry: { errors: string[]; warnings: string[] },
+  includeWarnings: boolean,
+): string[] {
+  return includeWarnings ? [...entry.errors, ...entry.warnings] : entry.errors;
 }

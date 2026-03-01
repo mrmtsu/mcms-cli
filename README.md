@@ -229,7 +229,9 @@ Error:
 }
 ```
 
-`error.details` is included only when `--verbose` is enabled.
+`error.details` is included when `--verbose` is enabled.
+For payload validation failures (`validate`, `content import`/`content bulk` with payload checks),
+`error.details` is always included to make CI diagnostics easier.
 
 ## Exit codes
 
