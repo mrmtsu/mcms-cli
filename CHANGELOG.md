@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Always include detailed diagnostics (`error.details`, including `issues`) in JSON mode for payload validation failures in `validate`, `content import`, and `content bulk`.
+- Added structured `issues` (`field` / `path` / `reason` / `expected` / `actual`) to payload validation results and improved failure messages with concise root-cause summaries.
+
 ## [0.5.0] - 2026-03-01
 
 ### Added

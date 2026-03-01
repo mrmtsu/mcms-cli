@@ -229,7 +229,9 @@ Error:
 }
 ```
 
-`error.details` は `--verbose` 指定時のみ含まれます。
+`error.details` は `--verbose` 指定時に含まれます。
+ただし、payload 検証失敗（`validate`、payload 検証付きの `content import` / `content bulk`）では、
+原因特定のため `error.details` を常時返します。
 
 ## 終了コード
 

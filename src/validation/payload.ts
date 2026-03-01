@@ -3,10 +3,29 @@ import { extractAllowedValues, extractApiFields, normalizeKind } from "../core/a
 
 const payloadSchema = z.record(z.string(), z.unknown());
 
+export type ValidationIssueCode =
+  | "INVALID_PAYLOAD_SHAPE"
+  | "REQUIRED_FIELD_MISSING"
+  | "UNKNOWN_FIELD"
+  | "FIELD_TYPE_MISMATCH"
+  | "FIELD_VALUE_OUT_OF_RANGE";
+
+export type ValidationIssue = {
+  level: "error" | "warning";
+  code: ValidationIssueCode;
+  path: string;
+  reason: string;
+  field?: string;
+  expected?: unknown;
+  actual?: unknown;
+  allowedValues?: string[];
+};
+
 export type ValidationResult = {
   valid: boolean;
   errors: string[];
   warnings: string[];
+  issues: ValidationIssue[];
 };
 
 type ApiField = {
@@ -27,15 +46,28 @@ type ExpectedValueType = "string" | "number" | "boolean" | "array" | "object";
 export function validatePayload(payload: unknown, apiSchema?: unknown): ValidationResult {
   const parsed = payloadSchema.safeParse(payload);
   if (!parsed.success) {
+    const errors = parsed.error.issues.map((issue) => issue.message);
+    const issues: ValidationIssue[] = parsed.error.issues.map((issue) => ({
+      level: "error",
+      code: "INVALID_PAYLOAD_SHAPE",
+      path: formatIssuePath(issue.path),
+      reason: issue.message,
+      field: extractFieldFromPath(issue.path),
+      actual: describeValueType(payload),
+      expected: "object",
+    }));
+
     return {
       valid: false,
-      errors: parsed.error.issues.map((issue) => issue.message),
+      errors,
       warnings: [],
+      issues,
     };
   }
 
   const errors: string[] = [];
   const warnings: string[] = [];
+  const issues: ValidationIssue[] = [];
 
   const fields = extractApiFields(apiSchema) as ApiField[];
   const knownFields = new Map(
@@ -52,14 +84,34 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
     .map((field) => field.fieldId as string);
   for (const field of requiredFields) {
     if (!(field in parsed.data)) {
-      errors.push(`Required field is missing: ${field}`);
+      const message = `Required field is missing: ${field}`;
+      errors.push(message);
+      issues.push({
+        level: "error",
+        code: "REQUIRED_FIELD_MISSING",
+        path: formatIssuePath([field]),
+        field,
+        reason: message,
+        expected: "present",
+        actual: "missing",
+      });
     }
   }
 
   if (knownFields.size > 0) {
     for (const key of Object.keys(parsed.data)) {
       if (!knownFields.has(key)) {
-        warnings.push(`Unknown field in payload: ${key}`);
+        const message = `Unknown field in payload: ${key}`;
+        warnings.push(message);
+        issues.push({
+          level: "warning",
+          code: "UNKNOWN_FIELD",
+          path: formatIssuePath([key]),
+          field: key,
+          reason: message,
+          expected: "known field",
+          actual: "unknown field",
+        });
       }
     }
   }
@@ -72,7 +124,18 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
 
     const expectedType = inferExpectedType(field);
     if (expectedType && !matchesExpectedType(value, expectedType)) {
-      errors.push(`Field type mismatch: ${key} expected ${expectedType}`);
+      const actualType = describeValueType(value);
+      const message = `Field type mismatch: ${key} expected ${expectedType} (actual ${actualType})`;
+      errors.push(message);
+      issues.push({
+        level: "error",
+        code: "FIELD_TYPE_MISMATCH",
+        path: formatIssuePath([key]),
+        field: key,
+        reason: message,
+        expected: expectedType,
+        actual: actualType,
+      });
       continue;
     }
 
@@ -83,9 +146,19 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
 
     if (typeof value === "string") {
       if (!allowedValues.has(value)) {
-        errors.push(
-          `Field value out of range: ${key} must be one of [${[...allowedValues].join(", ")}]`,
-        );
+        const allowedValuesList = [...allowedValues];
+        const message = `Field value out of range: ${key} must be one of [${allowedValuesList.join(", ")}]`;
+        errors.push(message);
+        issues.push({
+          level: "error",
+          code: "FIELD_VALUE_OUT_OF_RANGE",
+          path: formatIssuePath([key]),
+          field: key,
+          reason: message,
+          expected: "value in allowed set",
+          actual: value,
+          allowedValues: allowedValuesList,
+        });
       }
       continue;
     }
@@ -93,7 +166,19 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
     if (Array.isArray(value)) {
       const invalid = value.filter((item) => typeof item === "string" && !allowedValues.has(item));
       if (invalid.length > 0) {
-        errors.push(`Field value out of range: ${key} has invalid values [${invalid.join(", ")}]`);
+        const allowedValuesList = [...allowedValues];
+        const message = `Field value out of range: ${key} has invalid values [${invalid.join(", ")}]`;
+        errors.push(message);
+        issues.push({
+          level: "error",
+          code: "FIELD_VALUE_OUT_OF_RANGE",
+          path: formatIssuePath([key]),
+          field: key,
+          reason: message,
+          expected: "all items in allowed set",
+          actual: invalid,
+          allowedValues: allowedValuesList,
+        });
       }
     }
   }
@@ -102,6 +187,7 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
     valid: errors.length === 0,
     errors,
     warnings,
+    issues,
   };
 }
 
@@ -215,4 +301,48 @@ function toAllowedValueSet(field: ApiField): Set<string> | null {
   }
 
   return new Set(values);
+}
+
+function formatIssuePath(path: ReadonlyArray<PropertyKey>): string {
+  if (path.length === 0) {
+    return "$";
+  }
+
+  let result = "$";
+  for (const segment of path) {
+    if (typeof segment === "number") {
+      result += `[${segment}]`;
+      continue;
+    }
+
+    if (typeof segment === "string") {
+      result += `.${segment}`;
+      continue;
+    }
+
+    result += `.${String(segment)}`;
+  }
+
+  return result;
+}
+
+function extractFieldFromPath(path: ReadonlyArray<PropertyKey>): string | undefined {
+  const first = path.find((segment): segment is string => typeof segment === "string");
+  return first;
+}
+
+function describeValueType(value: unknown): string {
+  if (value === null) {
+    return "null";
+  }
+
+  if (Array.isArray(value)) {
+    return "array";
+  }
+
+  if (typeof value === "number" && !Number.isFinite(value)) {
+    return "non-finite number";
+  }
+
+  return typeof value;
 }

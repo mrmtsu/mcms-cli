@@ -17,11 +17,14 @@ export type JsonErrorShape = {
   retryable: boolean;
 };
 
+export type ErrorDetailsVisibility = "verbose" | "always";
+
 export class CliError extends Error {
   readonly code: ErrorCode;
   readonly exitCode: ExitCode;
   readonly details?: unknown;
   readonly retryable: boolean;
+  readonly detailsVisibility: ErrorDetailsVisibility;
 
   constructor(params: {
     code: ErrorCode;
@@ -29,6 +32,7 @@ export class CliError extends Error {
     exitCode: ExitCode;
     details?: unknown;
     retryable?: boolean;
+    detailsVisibility?: ErrorDetailsVisibility;
   }) {
     super(params.message);
     this.name = "CliError";
@@ -36,6 +40,7 @@ export class CliError extends Error {
     this.exitCode = params.exitCode;
     this.details = params.details;
     this.retryable = Boolean(params.retryable);
+    this.detailsVisibility = params.detailsVisibility ?? "verbose";
   }
 
   toJson(options?: { includeDetails?: boolean }): JsonErrorShape {
@@ -45,7 +50,10 @@ export class CliError extends Error {
       retryable: this.retryable,
     };
 
-    if (options?.includeDetails && this.details !== undefined) {
+    if (
+      (options?.includeDetails || this.detailsVisibility === "always") &&
+      this.details !== undefined
+    ) {
       payload.details = this.details;
     }
 

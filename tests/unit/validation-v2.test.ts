@@ -13,6 +13,16 @@ describe("payload validation v2", () => {
     const result = validatePayload({ title: "hello", views: "10" }, schema);
     expect(result.valid).toBe(false);
     expect(result.errors.join("\n")).toContain("views");
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: "error",
+          code: "FIELD_TYPE_MISMATCH",
+          field: "views",
+          path: "$.views",
+        }),
+      ]),
+    );
   });
 
   it("checks enum-like values from selectItems", () => {
@@ -30,6 +40,16 @@ describe("payload validation v2", () => {
     expect(result.valid).toBe(false);
     expect(result.errors.join("\n")).toContain("status");
     expect(result.errors.join("\n")).toContain("draft");
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: "error",
+          code: "FIELD_VALUE_OUT_OF_RANGE",
+          field: "status",
+          path: "$.status",
+        }),
+      ]),
+    );
   });
 
   it("avoids type errors for unknown field kinds", () => {
@@ -45,5 +65,6 @@ describe("payload validation v2", () => {
     const result = validatePayload({ customField: { any: "shape" } }, schema);
     expect(result.valid).toBe(true);
     expect(result.errors).toEqual([]);
+    expect(result.issues).toEqual([]);
   });
 });
