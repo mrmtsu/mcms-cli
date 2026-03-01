@@ -40,3 +40,4 @@ Thanks for contributing to `mcms-cli`.
 ## Release Notes
 
 Update `CHANGELOG.md` under `Unreleased` for user-facing changes.
+Keep `CHANGELOG.md` in English and use `CHANGELOG.ja.md` as the Japanese mirror.
