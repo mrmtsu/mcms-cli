@@ -10,16 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0] - 2026-03-01
 
 ### Added
-- `schema pull --format json-schema` を追加し、microCMS の API スキーマを JSON Schema (draft-07) で出力可能にした。
-- `schema pull --include-extensions` を追加し、`x-microcms-*` 拡張メタデータ付き JSON Schema を出力可能にした。
-- `@mrmtsu/microcms-schema-adapter` を依存追加し、JSON Schema 変換を CLI から直接利用できるようにした。
-- `schema pull` 向けの e2e テスト、および schema adapter 連携の unit テストを追加した。
-- `skills/mcms-cli/references/*` を追加し、セットアップ・安全運用・bulk/import・docs/search の実行手順を分割ドキュメント化した。
+- Added `schema pull --format json-schema` to export microCMS API schemas as JSON Schema (draft-07).
+- Added `schema pull --include-extensions` to include `x-microcms-*` metadata in JSON Schema output.
+- Added `@mrmtsu/microcms-schema-adapter` as a dependency so JSON Schema conversion can be used directly from the CLI.
+- Added e2e tests for `schema pull` and unit tests for schema adapter integration.
+- Added `skills/mcms-cli/references/*` to split setup/safe-operation/bulk-import/docs-search workflows into focused reference documents.
 
 ### Changed
-- `schema pull --format` の入力検証を追加し、不正値を `INVALID_INPUT` として明示的に失敗させるようにした。
-- `spec --json` の `schema pull` オプション定義を更新し、`--format <format>` と `--include-extensions` を公開仕様へ反映した。
-- `skills/mcms-cli/SKILL.md` を簡潔化し、詳細手順は `references/` 配下へ委譲する構成に整理した。
+- Added input validation for `schema pull --format` so invalid values fail explicitly with `INVALID_INPUT`.
+- Updated `spec --json` option definitions for `schema pull` to expose `--format <format>` and `--include-extensions`.
+- Simplified `skills/mcms-cli/SKILL.md` and delegated detailed procedures to files under `references/`.
 
 ## [0.4.0] - 2026-02-28
 
