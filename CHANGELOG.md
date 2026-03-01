@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- `validate` / `content import` / `content bulk` の payload 検証失敗時に、`INVALID_INPUT` の詳細診断（`issues` を含む `error.details`）を JSON モードで常時返すようにした。
-- payload バリデーション結果に構造化された `issues`（`field` / `path` / `reason` / `expected` / `actual`）を追加し、原因特定しやすいエラーメッセージ要約を返すようにした。
+- Always include detailed diagnostics (`error.details`, including `issues`) in JSON mode for payload validation failures in `validate`, `content import`, and `content bulk`.
+- Added structured `issues` (`field` / `path` / `reason` / `expected` / `actual`) to payload validation results and improved failure messages with concise root-cause summaries.
 
 ## [0.5.0] - 2026-03-01
 
