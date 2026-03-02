@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@mrmtsu/microcms-schema-adapter':
+        specifier: ^0.1.0
+        version: 0.1.0
       commander:
         specifier: ^14.0.3
         version: 14.0.3
@@ -17,14 +20,10 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    optionalDependencies:
-      keytar:
-        specifier: ^7.9.0
-        version: 7.9.0
     devDependencies:
       '@types/node':
         specifier: ^25.3.0
-        version: 25.3.0
+        version: 25.3.3
       oxfmt:
         specifier: ^0.34.0
         version: 0.34.0
@@ -39,7 +38,11 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.18
-        version: 4.0.18(@types/node@25.3.0)(tsx@4.21.0)
+        version: 4.0.18(@types/node@25.3.3)(tsx@4.21.0)
+    optionalDependencies:
+      keytar:
+        specifier: ^7.9.0
+        version: 7.9.0
 
 packages:
 
@@ -217,6 +220,10 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
+
+  '@mrmtsu/microcms-schema-adapter@0.1.0':
+    resolution: {integrity: sha512-JNwcoYdoJX5EszeFAV8ukmEdpSLhfyUztq1jJr2Z8Q0CjZvD91OtE7EJ8WX9N06HHJ/mLV/OJMbqc4OocbRwcg==}
+    engines: {node: '>=20'}
 
   '@oxfmt/binding-android-arm-eabi@0.34.0':
     resolution: {integrity: sha512-sqkqjh/Z38l+duOb1HtVqJTAj1grt2ttkobCopC/72+a4Xxz4xUgZPFyQ4HxrYMvyqO/YA0tvM1QbfOu70Gk1Q==}
@@ -583,8 +590,8 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
-  '@types/node@25.3.0':
-    resolution: {integrity: sha512-4K3bqJpXpqfg2XKGK9bpDTc6xO/xoUP/RBWS7AtRMug6zZFaRekiLzjVtAoZMquxoAbzBvy5nxQ7veS5eYzf8A==}
+  '@types/node@25.3.3':
+    resolution: {integrity: sha512-DpzbrH7wIcBaJibpKo9nnSQL0MTRdnWttGyE5haGwK86xgMOkFLp7vEyfQPGLOJh5wNYiJ3V9PmUMDhV9u8kkQ==}
 
   '@vitest/expect@4.0.18':
     resolution: {integrity: sha512-8sCWUyckXXYvx4opfzVY03EOiYVxyNrHS5QxX3DAIi5dpJAAkyJezHCP77VMX4HKA2LDT/Jpfo8i2r5BE3GnQQ==}
@@ -1421,6 +1428,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@mrmtsu/microcms-schema-adapter@0.1.0': {}
+
   '@oxfmt/binding-android-arm-eabi@0.34.0':
     optional: true
 
@@ -1621,7 +1630,7 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
-  '@types/node@25.3.0':
+  '@types/node@25.3.3':
     dependencies:
       undici-types: 7.18.2
 
@@ -1634,13 +1643,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@4.0.18(vite@7.3.1(@types/node@25.3.0)(tsx@4.21.0))':
+  '@vitest/mocker@4.0.18(vite@7.3.1(@types/node@25.3.3)(tsx@4.21.0))':
     dependencies:
       '@vitest/spy': 4.0.18
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.1(@types/node@25.3.0)(tsx@4.21.0)
+      vite: 7.3.1(@types/node@25.3.3)(tsx@4.21.0)
 
   '@vitest/pretty-format@4.0.18':
     dependencies:
@@ -2383,7 +2392,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite@7.3.1(@types/node@25.3.0)(tsx@4.21.0):
+  vite@7.3.1(@types/node@25.3.3)(tsx@4.21.0):
     dependencies:
       esbuild: 0.27.3
       fdir: 6.5.0(picomatch@4.0.3)
@@ -2392,14 +2401,14 @@ snapshots:
       rollup: 4.59.0
       tinyglobby: 0.2.15
     optionalDependencies:
-      '@types/node': 25.3.0
+      '@types/node': 25.3.3
       fsevents: 2.3.3
       tsx: 4.21.0
 
-  vitest@4.0.18(@types/node@25.3.0)(tsx@4.21.0):
+  vitest@4.0.18(@types/node@25.3.3)(tsx@4.21.0):
     dependencies:
       '@vitest/expect': 4.0.18
-      '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@25.3.0)(tsx@4.21.0))
+      '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@25.3.3)(tsx@4.21.0))
       '@vitest/pretty-format': 4.0.18
       '@vitest/runner': 4.0.18
       '@vitest/snapshot': 4.0.18
@@ -2416,10 +2425,10 @@ snapshots:
       tinyexec: 1.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 7.3.1(@types/node@25.3.0)(tsx@4.21.0)
+      vite: 7.3.1(@types/node@25.3.3)(tsx@4.21.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 25.3.0
+      '@types/node': 25.3.3
     transitivePeerDependencies:
       - jiti
       - less
