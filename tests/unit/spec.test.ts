@@ -18,6 +18,8 @@ describe("cli spec", () => {
     expect(spec.commands.some((command) => command.path === "media list")).toBe(true);
     expect(spec.commands.some((command) => command.path === "media delete")).toBe(true);
     expect(spec.commands.some((command) => command.path === "search")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "task suggest")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "task guide")).toBe(true);
     expect(spec.commands.some((command) => command.path === "spec")).toBe(true);
   });
 });

@@ -135,10 +135,14 @@ microcms docs list --source auto --json
 microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
 microcms search "content list" --scope all --json
 microcms spec --json
+microcms task list --json
+microcms task suggest "delete content" --json
+microcms task guide content-delete --json
 ```
 
 - `docs get`: microCMS公式ドキュメント本文（Markdown）を取得します。
 - `search`: コマンド仕様とドキュメントのメタデータ（タイトル/ファイル名）を検索します。本文は返しません。
+- `task suggest` / `task guide`: エージェント/CI向けにタスク単位の実行手順を返します。
 
 ### Schema / Types 補助
 

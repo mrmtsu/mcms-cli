@@ -12,6 +12,7 @@ import { registerMemberCommands } from "./commands/member.js";
 import { registerSearchCommand } from "./commands/search.js";
 import { registerSchemaCommands } from "./commands/schema.js";
 import { registerSpecCommand } from "./commands/spec.js";
+import { registerTaskCommands } from "./commands/task.js";
 import { registerTypesCommands } from "./commands/types.js";
 import { registerValidateCommand } from "./commands/validate.js";
 import type { RuntimeContext } from "./core/context.js";
@@ -93,6 +94,7 @@ async function main(argv: string[]): Promise<void> {
   registerSearchCommand(program);
   registerSchemaCommands(program);
   registerSpecCommand(program);
+  registerTaskCommands(program);
   registerTypesCommands(program);
   registerValidateCommand(program);
 

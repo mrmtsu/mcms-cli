@@ -369,6 +369,27 @@ const COMMANDS: CommandSpec[] = [
     readOnly: true,
   },
   {
+    path: "task list",
+    description: "list built-in task workflow ids",
+    args: [],
+    options: [],
+    readOnly: true,
+  },
+  {
+    path: "task suggest",
+    description: "suggest safe command sequences from task intent",
+    args: ["[query]"],
+    options: ["--limit <n>"],
+    readOnly: true,
+  },
+  {
+    path: "task guide",
+    description: "print a task-focused runbook in markdown",
+    args: ["<taskId>"],
+    options: [],
+    readOnly: true,
+  },
+  {
     path: "spec",
     description: "output machine-readable CLI spec",
     args: [],
