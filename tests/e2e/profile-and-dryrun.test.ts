@@ -77,7 +77,10 @@ describe("profile and dry-run flows", () => {
       "--json",
     ]);
     expect(createResult.code).toBe(0);
-    expect(JSON.parse(createResult.stdout).data.operation).toBe("content.create");
+    const createBody = JSON.parse(createResult.stdout);
+    expect(createBody.data.operation).toBe("content.create");
+    expect(createBody.data.requiresConfirmation).toBe(false);
+    expect(createBody.data.riskLevel).toBe("low");
 
     const updateResult = runCli([
       "content",
@@ -90,11 +93,17 @@ describe("profile and dry-run flows", () => {
       "--json",
     ]);
     expect(updateResult.code).toBe(0);
-    expect(JSON.parse(updateResult.stdout).data.operation).toBe("content.update");
+    const updateBody = JSON.parse(updateResult.stdout);
+    expect(updateBody.data.operation).toBe("content.update");
+    expect(updateBody.data.requiresConfirmation).toBe(false);
+    expect(updateBody.data.riskLevel).toBe("medium");
 
     const deleteResult = runCli(["content", "delete", "notes", "id-1", "--dry-run", "--json"]);
     expect(deleteResult.code).toBe(0);
-    expect(JSON.parse(deleteResult.stdout).data.operation).toBe("content.delete");
+    const deleteBody = JSON.parse(deleteResult.stdout);
+    expect(deleteBody.data.operation).toBe("content.delete");
+    expect(deleteBody.data.requiresConfirmation).toBe(true);
+    expect(deleteBody.data.riskLevel).toBe("high");
 
     const statusResult = runCli([
       "content",
@@ -108,7 +117,10 @@ describe("profile and dry-run flows", () => {
       "--json",
     ]);
     expect(statusResult.code).toBe(0);
-    expect(JSON.parse(statusResult.stdout).data.operation).toBe("content.status.set");
+    const statusBody = JSON.parse(statusResult.stdout);
+    expect(statusBody.data.operation).toBe("content.status.set");
+    expect(statusBody.data.requiresConfirmation).toBe(true);
+    expect(statusBody.data.riskLevel).toBe("medium");
 
     const createdByResult = runCli([
       "content",
@@ -122,13 +134,18 @@ describe("profile and dry-run flows", () => {
       "--json",
     ]);
     expect(createdByResult.code).toBe(0);
-    expect(JSON.parse(createdByResult.stdout).data.operation).toBe("content.created-by.set");
+    const createdByBody = JSON.parse(createdByResult.stdout);
+    expect(createdByBody.data.operation).toBe("content.created-by.set");
+    expect(createdByBody.data.requiresConfirmation).toBe(true);
+    expect(createdByBody.data.riskLevel).toBe("medium");
 
     const mediaResult = runCli(["media", "upload", mediaPath, "--dry-run", "--json"]);
     expect(mediaResult.code).toBe(0);
     const mediaBody = JSON.parse(mediaResult.stdout);
     expect(mediaBody.data.operation).toBe("media.upload");
     expect(mediaBody.data.size).toBeGreaterThan(0);
+    expect(mediaBody.data.requiresConfirmation).toBe(false);
+    expect(mediaBody.data.riskLevel).toBe("low");
 
     const mediaDeleteResult = runCli([
       "media",
@@ -141,6 +158,8 @@ describe("profile and dry-run flows", () => {
     expect(mediaDeleteResult.code).toBe(0);
     const mediaDeleteBody = JSON.parse(mediaDeleteResult.stdout);
     expect(mediaDeleteBody.data.operation).toBe("media.delete");
+    expect(mediaDeleteBody.data.requiresConfirmation).toBe(true);
+    expect(mediaDeleteBody.data.riskLevel).toBe("high");
   });
 
   it("validates media list options before network calls", () => {

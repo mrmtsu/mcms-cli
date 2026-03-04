@@ -18,6 +18,7 @@ import type { RuntimeContext } from "../core/context.js";
 import { CliError, normalizeError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
 import { assertObjectPayload, readJsonFile } from "../core/io.js";
+import { withOperationConfirmation } from "../core/operation-risk.js";
 import { printSuccess } from "../core/output.js";
 import { extractApiEndpoints } from "../core/schema.js";
 import { parseBulkOperations, type BulkOperation } from "../validation/bulk-operations.js";
@@ -262,7 +263,7 @@ export function registerContentCommands(program: Command): void {
         if (options.dryRun) {
           printSuccess(
             ctx,
-            {
+            withOperationConfirmation("content.import", {
               dryRun: true,
               operation: "content.import",
               endpoint,
@@ -272,7 +273,7 @@ export function registerContentCommands(program: Command): void {
               intervalMs,
               strictWarnings: Boolean(options.strictWarnings),
               checked: checks,
-            },
+            }),
             validationRequestId,
           );
           return;
@@ -346,7 +347,7 @@ export function registerContentCommands(program: Command): void {
 
         printSuccess(
           ctx,
-          {
+          withOperationConfirmation("content.import", {
             operation: "content.import",
             endpoint,
             file: options.file,
@@ -357,7 +358,7 @@ export function registerContentCommands(program: Command): void {
             created: createdCount,
             updated: updatedCount,
             results,
-          },
+          }),
           requestId,
         );
       }),
@@ -458,7 +459,7 @@ export function registerContentCommands(program: Command): void {
         if (options.dryRun) {
           printSuccess(
             ctx,
-            {
+            withOperationConfirmation("content.bulk", {
               dryRun: true,
               operation: "content.bulk",
               file: options.file,
@@ -469,7 +470,7 @@ export function registerContentCommands(program: Command): void {
               strictWarnings: Boolean(options.strictWarnings),
               checked: checks,
               operations,
-            },
+            }),
             validationRequestId,
           );
           return;
@@ -542,7 +543,7 @@ export function registerContentCommands(program: Command): void {
 
         printSuccess(
           ctx,
-          {
+          withOperationConfirmation("content.bulk", {
             operation: "content.bulk",
             file: options.file,
             total: operations.length,
@@ -554,7 +555,7 @@ export function registerContentCommands(program: Command): void {
             failed,
             skipped,
             results,
-          },
+          }),
           requestId,
         );
       }),
@@ -661,12 +662,15 @@ export function registerContentCommands(program: Command): void {
           const payload = assertObjectPayload(await readJsonFile(options.file));
 
           if (options.dryRun) {
-            printSuccess(ctx, {
-              dryRun: true,
-              operation: "content.create",
-              endpoint,
-              payload,
-            });
+            printSuccess(
+              ctx,
+              withOperationConfirmation("content.create", {
+                dryRun: true,
+                operation: "content.create",
+                endpoint,
+                payload,
+              }),
+            );
             return;
           }
 
@@ -688,13 +692,16 @@ export function registerContentCommands(program: Command): void {
           const payload = assertObjectPayload(await readJsonFile(options.file));
 
           if (options.dryRun) {
-            printSuccess(ctx, {
-              dryRun: true,
-              operation: "content.update",
-              endpoint,
-              id,
-              payload,
-            });
+            printSuccess(
+              ctx,
+              withOperationConfirmation("content.update", {
+                dryRun: true,
+                operation: "content.update",
+                endpoint,
+                id,
+                payload,
+              }),
+            );
             return;
           }
 
@@ -713,12 +720,15 @@ export function registerContentCommands(program: Command): void {
       withCommandContext(
         async (ctx, endpoint: string, id: string, options: { dryRun?: boolean }) => {
           if (options.dryRun) {
-            printSuccess(ctx, {
-              dryRun: true,
-              operation: "content.delete",
-              endpoint,
-              id,
-            });
+            printSuccess(
+              ctx,
+              withOperationConfirmation("content.delete", {
+                dryRun: true,
+                operation: "content.delete",
+                endpoint,
+                id,
+              }),
+            );
             return;
           }
 
@@ -778,13 +788,16 @@ export function registerContentCommands(program: Command): void {
         const normalizedStatus = parseContentStatus(options.status);
 
         if (options.dryRun) {
-          printSuccess(ctx, {
-            dryRun: true,
-            operation: "content.status.set",
-            endpoint,
-            id,
-            status: normalizedStatus,
-          });
+          printSuccess(
+            ctx,
+            withOperationConfirmation("content.status.set", {
+              dryRun: true,
+              operation: "content.status.set",
+              endpoint,
+              id,
+              status: normalizedStatus,
+            }),
+          );
           return;
         }
 
@@ -809,13 +822,16 @@ export function registerContentCommands(program: Command): void {
           const memberId = parseCreatedByMemberId(options.member);
 
           if (options.dryRun) {
-            printSuccess(ctx, {
-              dryRun: true,
-              operation: "content.created-by.set",
-              endpoint,
-              id,
-              memberId,
-            });
+            printSuccess(
+              ctx,
+              withOperationConfirmation("content.created-by.set", {
+                dryRun: true,
+                operation: "content.created-by.set",
+                endpoint,
+                id,
+                memberId,
+              }),
+            );
             return;
           }
 
