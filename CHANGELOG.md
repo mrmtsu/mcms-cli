@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added `task` command group with `task list`, `task suggest`, and `task guide` to provide task-oriented workflow discovery and runbook output for agent/CI usage.
+- Added operation risk policy metadata (`requiresConfirmation`, `riskLevel`, `confirmationReason`) and surfaced it in write-operation dry-run outputs plus `content import` / `content bulk` summaries.
+
 ### Changed
 - Always include detailed diagnostics (`error.details`, including `issues`) in JSON mode for payload validation failures in `validate`, `content import`, and `content bulk`.
 - Added structured `issues` (`field` / `path` / `reason` / `expected` / `actual`) to payload validation results and improved failure messages with concise root-cause summaries.
+- Updated shell completion and command spec metadata to expose the new `task` command group.
+- Updated README / README.ja command examples to include task workflow helper usage.
+
+### Tests
+- Added unit tests for operation risk policies and task workflow ranking/guide generation.
+- Added e2e tests for `task` commands and agent workflow scenarios that assert dry-run confirmation metadata contracts.
 
 ## [0.5.0] - 2026-03-01
 

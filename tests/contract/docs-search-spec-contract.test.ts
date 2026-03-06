@@ -91,6 +91,21 @@ describe("docs/search/spec contract", () => {
         (command) => command.path === "types sync",
       ),
     ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "task list",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "task suggest",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "task guide",
+      ),
+    ).toBe(true);
 
     const contentBulk = (
       specBody.data.commands as Array<{ path?: string; options?: string[] }>

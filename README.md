@@ -135,10 +135,14 @@ microcms docs list --source auto --json
 microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
 microcms search "content list" --scope all --json
 microcms spec --json
+microcms task list --json
+microcms task suggest "delete content" --json
+microcms task guide content-delete --json
 ```
 
 - `docs get`: fetch official microCMS documentation markdown content.
 - `search`: search command/spec references and docs metadata (titles/filenames), not full doc body.
+- `task suggest` / `task guide`: task-oriented runbook helpers for agent/CI workflows.
 
 ### Schema / Type helpers
 

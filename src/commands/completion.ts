@@ -257,7 +257,7 @@ _microcms_complete() {
   command="\${COMP_WORDS[1]}"
   subcmd="\${COMP_WORDS[2]}"
 
-  local roots="api auth config completion content docs media member schema search spec types validate help"
+  local roots="api auth config completion content docs media member schema search spec task types validate help"
   local globals="${globals}"
 
   if [[ \${COMP_CWORD} -eq 1 ]]; then
@@ -314,6 +314,9 @@ _microcms_complete() {
     search)
       COMPREPLY=( $(compgen -W "--scope --source --category --limit" -- "$cur") )
       ;;
+    task)
+      COMPREPLY=( $(compgen -W "list suggest guide --limit" -- "$cur") )
+      ;;
     spec)
       COMPREPLY=( $(compgen -W "$globals" -- "$cur") )
       ;;
@@ -342,7 +345,7 @@ _microcms_endpoints() {
 
 _microcms() {
   local -a roots
-  roots=(api auth config completion content docs media member schema search spec types validate)
+  roots=(api auth config completion content docs media member schema search spec task types validate)
   _arguments '*::arg:->args'
 
   case $state in
@@ -404,6 +407,9 @@ _microcms() {
         search)
           _values 'search option' --scope --source --category --limit
           ;;
+        task)
+          _values 'task command' list suggest guide --limit
+          ;;
         spec)
           _values 'global option' ${globals}
           ;;
@@ -426,7 +432,7 @@ function buildFishCompletionScript(): string {
   return `# microcms completion for fish
 complete -c microcms -f
 
-complete -c microcms -n '__fish_use_subcommand' -a 'api auth config completion content docs media member schema search spec types validate'
+complete -c microcms -n '__fish_use_subcommand' -a 'api auth config completion content docs media member schema search spec task types validate'
 
 complete -c microcms -n '__fish_seen_subcommand_from auth' -a 'login status profile'
 complete -c microcms -n '__fish_seen_subcommand_from api' -a 'list info'
@@ -438,6 +444,7 @@ complete -c microcms -n '__fish_seen_subcommand_from config' -a 'doctor'
 complete -c microcms -n '__fish_seen_subcommand_from schema' -a 'pull diff'
 complete -c microcms -n '__fish_seen_subcommand_from types' -a 'generate sync'
 complete -c microcms -n '__fish_seen_subcommand_from completion' -a 'install uninstall bash zsh fish'
+complete -c microcms -n '__fish_seen_subcommand_from task' -a 'list suggest guide'
 
 complete -c microcms -n '__fish_seen_subcommand_from api; and __fish_seen_subcommand_from info; and __fish_is_nth_token 3' -a '(microcms completion endpoints 2>/dev/null)'
 complete -c microcms -n '__fish_seen_subcommand_from content; and __fish_is_nth_token 3' -a '(microcms completion endpoints 2>/dev/null)'

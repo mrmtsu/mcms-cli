@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { deleteMedia, listMedia, uploadMedia } from "../core/client.js";
 import { CliError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
+import { withOperationConfirmation } from "../core/operation-risk.js";
 import { printSuccess } from "../core/output.js";
 import { parseIntegerOption, withCommandContext } from "./utils.js";
 
@@ -66,12 +67,15 @@ export function registerMediaCommands(program: Command): void {
             });
           }
 
-          printSuccess(ctx, {
-            dryRun: true,
-            operation: "media.upload",
-            path,
-            size: file.size,
-          });
+          printSuccess(
+            ctx,
+            withOperationConfirmation("media.upload", {
+              dryRun: true,
+              operation: "media.upload",
+              path,
+              size: file.size,
+            }),
+          );
           return;
         }
 
@@ -89,11 +93,14 @@ export function registerMediaCommands(program: Command): void {
         const url = parseMediaUrl(options.url);
 
         if (options.dryRun) {
-          printSuccess(ctx, {
-            dryRun: true,
-            operation: "media.delete",
-            url,
-          });
+          printSuccess(
+            ctx,
+            withOperationConfirmation("media.delete", {
+              dryRun: true,
+              operation: "media.delete",
+              url,
+            }),
+          );
           return;
         }
 
