@@ -26,10 +26,18 @@ npx @mrmtsu/mcms-cli --help
 
 ## Agent Skill
 
-This repository includes a Codex/Claude-compatible skill at `skills/mcms-cli/SKILL.md`.
+This repository includes a generated Codex/Claude-compatible skill at `skills/mcms-cli/SKILL.md`.
+The packaged skill is derived from repository sources and shipped with the npm package.
 
 ```bash
 npx skills add mrmtsu/mcms-cli --skill mcms-cli
+```
+
+For contributors:
+
+```bash
+npm run skill:generate
+npm run skill:check
 ```
 
 ## FAQ
@@ -251,6 +259,7 @@ For payload validation failures (`validate`, `content import`/`content bulk` wit
 
 ```bash
 npm install
+npm run skill:check
 npm run lint
 npm run format:check
 npm run typecheck
