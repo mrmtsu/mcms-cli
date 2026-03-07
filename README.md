@@ -26,8 +26,8 @@ npx @mrmtsu/mcms-cli --help
 
 ## Agent Skill
 
-This repository includes a generated Codex/Claude-compatible skill at `skills/mcms-cli/SKILL.md`.
-The packaged skill is derived from repository sources and shipped with the npm package.
+This repository includes a generated Agent Skill at `skills/mcms-cli/SKILL.md`.
+The packaged skill follows the open Agent Skills format, is derived from repository sources, and is shipped with the npm package.
 
 ```bash
 npx skills add mrmtsu/mcms-cli --skill mcms-cli
