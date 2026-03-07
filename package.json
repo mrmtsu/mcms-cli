@@ -30,16 +30,19 @@
   },
   "files": [
     "dist",
+    "skills",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "check:ci": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build",
+    "check:ci": "npm run skill:check && npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build",
     "dev": "tsx src/cli.ts",
-    "lint": "oxlint --deny-warnings src tests vitest.config.ts",
-    "format": "oxfmt --write src tests vitest.config.ts",
-    "format:check": "oxfmt --check src tests vitest.config.ts",
+    "lint": "oxlint --deny-warnings src scripts tests vitest.config.ts",
+    "format": "oxfmt --write src scripts tests vitest.config.ts",
+    "format:check": "oxfmt --check src scripts tests vitest.config.ts",
+    "skill:check": "tsx scripts/generate-skill.ts --check",
+    "skill:generate": "tsx scripts/generate-skill.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit"

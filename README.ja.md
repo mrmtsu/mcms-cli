@@ -26,10 +26,18 @@ npx @mrmtsu/mcms-cli --help
 
 ## Agent Skill
 
-このリポジトリには Codex/Claude 互換のスキル `skills/mcms-cli/SKILL.md` を同梱しています。
+このリポジトリには、リポジトリ内の source から生成される Agent Skill `skills/mcms-cli/SKILL.md` を同梱しています。
+この skill は open Agent Skills format に従っており、npm パッケージにも含めて配布します。
 
 ```bash
 npx skills add mrmtsu/mcms-cli --skill mcms-cli
+```
+
+開発時:
+
+```bash
+npm run skill:generate
+npm run skill:check
 ```
 
 ## FAQ
@@ -251,6 +259,7 @@ Error:
 
 ```bash
 npm install
+npm run skill:check
 npm run lint
 npm run format:check
 npm run typecheck
