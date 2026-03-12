@@ -100,6 +100,11 @@ microcms member get <memberId> --json
 microcms content list <endpoint> --json
 microcms content list <endpoint> --all --json
 microcms content get <endpoint> <id> --json
+microcms content pull <endpoint> --all --out managed-content --format managed-json --json
+microcms content verify <endpoint> --dir managed-content --only-changed --json
+microcms content push <endpoint> --dir managed-content --json
+microcms content push <endpoint> --dir managed-content --execute --json
+microcms content sync-status <endpoint> --dir managed-content --json
 microcms content meta list <endpoint> --json
 microcms content meta get <endpoint> <id> --json
 microcms content status set <endpoint> <id> --status PUBLISH --json
@@ -133,6 +138,10 @@ microcms validate <endpoint> --file payload.json --json
 ```
 
 - `content export --all` は list API を対象にエクスポートし、object API はスキップします。
+- `content pull` / `content verify` / `content push` / `content sync-status` は、file-based なコンテンツ運用向け managed-json first cut です。
+- managed-json v1 は list API のみ対応です。object API、media 同期、hooks/revalidate、自動マージは対象外です。
+- `content push` はデフォルトで verify のみ行い、remote 書き込みは `--execute` 指定時だけ行います。
+- managed-json の delete は明示 tombstone 方式です。record file を消しただけでは remote delete されません。
 - `content bulk --dry-run` は API 呼び出しなしで操作定義ファイルの構造のみ検証します。
 - スキーマに基づく payload 検証が必要な場合は `--validate-payload`（または `--strict-warnings`）を指定してください。
 

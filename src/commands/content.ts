@@ -2,6 +2,29 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
 import { Command } from "commander";
 import {
+  buildManagedPaths,
+  createManagedManifest,
+  createManagedManifestRecord,
+  deleteManagedTombstone,
+  detectApiEndpointType,
+  discoverManagedEndpoints,
+  ensureManagedDirectories,
+  loadManagedEndpointState,
+  MANAGED_JSON_FORMAT,
+  normalizeManagedPayload,
+  removeManagedManifestRecord,
+  replaceManagedRecordFile,
+  upsertManagedManifestRecord,
+  writeManagedManifest,
+  writeManagedRecord,
+  writeManagedSchema,
+  type ManagedEndpointState,
+  type ManagedLocalRecord,
+  type ManagedManifest,
+  type ManagedManifestRecord,
+  type ManagedTombstone,
+} from "../core/content-managed.js";
+import {
   createContent,
   deleteContent,
   getApiInfo,
@@ -81,8 +104,103 @@ type DiffOptions = {
   draftKey: string;
 };
 
+type PullOptions = {
+  out: string;
+  all?: boolean;
+  id?: string;
+  ids?: string;
+  format?: string;
+};
+
+type ManagedCommandOptions = {
+  dir: string;
+  id?: string;
+  ids?: string;
+  endpoints?: string;
+  onlyChanged?: boolean;
+};
+
+type PushOptions = ManagedCommandOptions & {
+  execute?: boolean;
+  force?: boolean;
+};
+
 export function registerContentCommands(program: Command): void {
   const content = program.command("content").description("Content API operations");
+
+  content
+    .command("pull")
+    .argument("[endpoint]", "API endpoint")
+    .requiredOption("--out <dir>", "managed-json output directory")
+    .option("--all", "pull all records for the endpoint, or all endpoints when endpoint is omitted")
+    .option("--id <id>", "pull a single content id")
+    .option("--ids <ids>", "pull comma-separated content ids")
+    .option("--format <format>", "output format: managed-json", MANAGED_JSON_FORMAT)
+    .action(
+      withCommandContext(async (ctx, endpoint: string | undefined, options: PullOptions) => {
+        const result = await runManagedPull(ctx, endpoint, options);
+        printSuccess(ctx, result.data, result.requestId);
+      }),
+    );
+
+  content
+    .command("verify")
+    .argument("[endpoint]", "API endpoint")
+    .requiredOption("--dir <dir>", "managed-json directory")
+    .option("--id <id>", "target a single content id or local file name")
+    .option("--ids <ids>", "target comma-separated content ids or local file names")
+    .option("--endpoints <endpoints>", "comma-separated endpoint names")
+    .option("--only-changed", "verify only records whose hash differs from manifest")
+    .action(
+      withCommandContext(
+        async (ctx, endpoint: string | undefined, options: ManagedCommandOptions) => {
+          const result = await runManagedVerify(ctx, endpoint, options);
+          if (result.exitCode !== EXIT_CODE.SUCCESS) {
+            process.exitCode = result.exitCode;
+          }
+          printSuccess(ctx, result.data, result.requestId);
+        },
+      ),
+    );
+
+  content
+    .command("push")
+    .argument("[endpoint]", "API endpoint")
+    .requiredOption("--dir <dir>", "managed-json directory")
+    .option("--id <id>", "target a single content id or local file name")
+    .option("--ids <ids>", "target comma-separated content ids or local file names")
+    .option("--endpoints <endpoints>", "comma-separated endpoint names")
+    .option("--only-changed", "push only records whose hash differs from manifest")
+    .option("--execute", "perform remote writes after successful verification")
+    .option("--force", "override stale remote conflicts during execute")
+    .action(
+      withCommandContext(async (ctx, endpoint: string | undefined, options: PushOptions) => {
+        const result = await runManagedPush(ctx, endpoint, options);
+        if (result.exitCode !== EXIT_CODE.SUCCESS) {
+          process.exitCode = result.exitCode;
+        }
+        printSuccess(ctx, result.data, result.requestId);
+      }),
+    );
+
+  content
+    .command("sync-status")
+    .argument("[endpoint]", "API endpoint")
+    .requiredOption("--dir <dir>", "managed-json directory")
+    .option("--id <id>", "target a single content id or local file name")
+    .option("--ids <ids>", "target comma-separated content ids or local file names")
+    .option("--endpoints <endpoints>", "comma-separated endpoint names")
+    .action(
+      withCommandContext(
+        async (ctx, endpoint: string | undefined, options: ManagedCommandOptions) => {
+          const result = await runManagedSyncStatus(ctx, endpoint, options);
+          if (result.exitCode !== EXIT_CODE.SUCCESS) {
+            process.exitCode = result.exitCode;
+          }
+          printSuccess(ctx, result.data, result.requestId);
+        },
+      ),
+    );
 
   content
     .command("export")
@@ -842,6 +960,1049 @@ export function registerContentCommands(program: Command): void {
     );
 }
 
+type ManagedRequestState = {
+  requestId: string | null;
+};
+
+type ManagedPlanAction = "create" | "update" | "delete";
+
+type ManagedPlanItem = {
+  endpoint: string;
+  action: ManagedPlanAction;
+  selector: string;
+  id: string;
+  file: string;
+  payload: Record<string, unknown> | null;
+  localRecord: ManagedLocalRecord | null;
+  tombstone: ManagedTombstone | null;
+  manifestRecord: ManagedManifestRecord | null;
+  valid: boolean;
+  dryRunOk: boolean;
+  conflict: boolean;
+  errors: string[];
+  warnings: string[];
+};
+
+type ManagedEndpointPlan = {
+  endpoint: string;
+  items: ManagedPlanItem[];
+};
+
+type ManagedPlanResult = {
+  rootDir: string;
+  requestId: string | null;
+  endpoints: ManagedEndpointPlan[];
+  states: Map<string, ManagedEndpointState>;
+  schemas: Map<string, unknown>;
+  hasConflicts: boolean;
+  hasNonConflictFailures: boolean;
+  exitCode: number;
+};
+
+type ManagedCommandResult = {
+  data: unknown;
+  requestId: string | null;
+  exitCode: number;
+};
+
+async function runManagedPull(
+  ctx: RuntimeContext,
+  endpoint: string | undefined,
+  options: PullOptions,
+): Promise<ManagedCommandResult> {
+  const format = parseManagedFormat(options.format);
+  const outDir = normalizeOutPath(options.out);
+  const requestState = { requestId: null as string | null };
+  const selectorIds = parseManagedSelectors(options.id, options.ids);
+
+  if (options.all && selectorIds.length > 0) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: "--all cannot be combined with --id or --ids.",
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  if (!endpoint && selectorIds.length > 0) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: "--id/--ids require an endpoint.",
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  const endpoints = endpoint
+    ? [endpoint]
+    : options.all
+      ? await listManagedPullEndpoints(ctx, requestState)
+      : [];
+
+  if (endpoints.length === 0) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: "Endpoint is required unless --all is set.",
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  const endpointResults: Array<{
+    endpoint: string;
+    count: number;
+    manifestPath: string;
+    schemaPath: string;
+    fullSync: boolean;
+  }> = [];
+
+  for (const targetEndpoint of endpoints) {
+    const apiInfo = await getApiInfo(ctx, targetEndpoint);
+    requestState.requestId = apiInfo.requestId ?? requestState.requestId;
+    assertManagedListApi(targetEndpoint, apiInfo.data);
+
+    const paths = buildManagedPaths(outDir, targetEndpoint);
+    await ensureManagedDirectories(paths);
+    await writeManagedSchema(paths, apiInfo.data);
+
+    const currentState = await loadManagedEndpointState(outDir, targetEndpoint);
+    const pulledAt = new Date().toISOString();
+    const fullSync = selectorIds.length === 0;
+    const remoteRecords =
+      selectorIds.length > 0
+        ? await fetchManagedContentByIds(ctx, targetEndpoint, selectorIds, requestState)
+        : await fetchAllManagedContent(ctx, targetEndpoint, requestState);
+    const manifestEntries = new Map<string, ManagedManifestRecord>();
+
+    if (!fullSync) {
+      for (const record of currentState.manifest.records) {
+        manifestEntries.set(record.id, record);
+      }
+    }
+
+    for (const remoteRecord of remoteRecords) {
+      const recordId = extractRequiredContentId(remoteRecord, targetEndpoint);
+      const normalized = normalizeManagedPayload(apiInfo.data, remoteRecord);
+      await writeManagedRecord(paths, `${recordId}.json`, normalized);
+      manifestEntries.set(
+        recordId,
+        createManagedManifestRecord({
+          id: recordId,
+          fileName: `${recordId}.json`,
+          payload: normalized,
+          remoteUpdatedAt: extractRemoteTimestamp(remoteRecord, "updatedAt"),
+          remotePublishedAt: extractRemoteTimestamp(remoteRecord, "publishedAt"),
+        }),
+      );
+    }
+
+    const manifest = createManagedManifest({
+      endpoint: targetEndpoint,
+      pulledAt,
+      schemaPath: `schema/${targetEndpoint}.json`,
+      records: [...manifestEntries.values()],
+    });
+    await writeManagedManifest(paths, manifest);
+
+    endpointResults.push({
+      endpoint: targetEndpoint,
+      count: remoteRecords.length,
+      manifestPath: paths.manifestPath,
+      schemaPath: paths.schemaPath,
+      fullSync,
+    });
+  }
+
+  return {
+    data: {
+      operation: "content.pull",
+      format,
+      out: outDir,
+      endpointCount: endpointResults.length,
+      endpoints: endpointResults,
+    },
+    requestId: requestState.requestId,
+    exitCode: EXIT_CODE.SUCCESS,
+  };
+}
+
+async function runManagedVerify(
+  ctx: RuntimeContext,
+  endpoint: string | undefined,
+  options: ManagedCommandOptions,
+): Promise<ManagedCommandResult> {
+  const plan = await buildManagedPlan(ctx, endpoint, options);
+  return {
+    data: renderManagedVerifyPayload("content.verify", options.dir, plan),
+    requestId: plan.requestId,
+    exitCode: plan.exitCode,
+  };
+}
+
+async function runManagedPush(
+  ctx: RuntimeContext,
+  endpoint: string | undefined,
+  options: PushOptions,
+): Promise<ManagedCommandResult> {
+  const plan = await buildManagedPlan(ctx, endpoint, options);
+  const verification = renderManagedVerifyPayload("content.push", options.dir, plan);
+
+  if (!options.execute) {
+    return {
+      data: {
+        ...verification,
+        execute: false,
+      },
+      requestId: plan.requestId,
+      exitCode: plan.exitCode,
+    };
+  }
+
+  if (plan.hasNonConflictFailures || (plan.hasConflicts && !options.force)) {
+    return {
+      data: {
+        ...verification,
+        execute: true,
+        force: Boolean(options.force),
+        blocked: true,
+        execution: {
+          attempted: 0,
+          succeeded: 0,
+          failed: 0,
+          results: [],
+        },
+      },
+      requestId: plan.requestId,
+      exitCode: plan.hasNonConflictFailures ? EXIT_CODE.INVALID_INPUT : EXIT_CODE.CONFLICT,
+    };
+  }
+
+  const execution = await executeManagedPlan(ctx, plan, Boolean(options.force));
+  return {
+    data: {
+      ...verification,
+      execute: true,
+      force: Boolean(options.force),
+      blocked: false,
+      execution: execution.data,
+    },
+    requestId: execution.requestId ?? plan.requestId,
+    exitCode: execution.exitCode,
+  };
+}
+
+async function runManagedSyncStatus(
+  ctx: RuntimeContext,
+  endpoint: string | undefined,
+  options: ManagedCommandOptions,
+): Promise<ManagedCommandResult> {
+  const requestState = { requestId: null as string | null };
+  const endpoints = await resolveManagedEndpoints(endpoint, options.dir, options.endpoints);
+  const selectors = parseManagedSelectors(options.id, options.ids);
+  const endpointResults: Array<{
+    endpoint: string;
+    counts: Record<string, number>;
+    records: Array<Record<string, unknown>>;
+  }> = [];
+
+  for (const targetEndpoint of endpoints) {
+    const apiInfo = await getApiInfo(ctx, targetEndpoint);
+    requestState.requestId = apiInfo.requestId ?? requestState.requestId;
+    assertManagedListApi(targetEndpoint, apiInfo.data);
+
+    const state = await loadManagedEndpointState(options.dir, targetEndpoint);
+    const records: Array<Record<string, unknown>> = [];
+
+    for (const localRecord of state.localRecords) {
+      if (!matchesManagedSelector(localRecord.id, localRecord.fileName, selectors)) {
+        continue;
+      }
+
+      const status = await classifyManagedLocalRecordStatus(
+        ctx,
+        targetEndpoint,
+        localRecord,
+        requestState,
+      );
+      records.push({
+        id: localRecord.id,
+        file: localRecord.relativePath,
+        status,
+      });
+    }
+
+    for (const tombstone of state.tombstones) {
+      if (!matchesManagedSelector(tombstone.id, tombstone.fileName, selectors)) {
+        continue;
+      }
+
+      records.push({
+        id: tombstone.id,
+        file: tombstone.relativePath,
+        status: "pending_delete",
+      });
+    }
+
+    endpointResults.push({
+      endpoint: targetEndpoint,
+      counts: countManagedStatuses(records),
+      records,
+    });
+  }
+
+  return {
+    data: {
+      operation: "content.sync-status",
+      dir: options.dir,
+      endpointCount: endpointResults.length,
+      endpoints: endpointResults,
+    },
+    requestId: requestState.requestId,
+    exitCode: EXIT_CODE.SUCCESS,
+  };
+}
+
+async function buildManagedPlan(
+  ctx: RuntimeContext,
+  endpoint: string | undefined,
+  options: ManagedCommandOptions,
+): Promise<ManagedPlanResult> {
+  const requestState = { requestId: null as string | null };
+  const endpoints = await resolveManagedEndpoints(endpoint, options.dir, options.endpoints);
+  const selectors = parseManagedSelectors(options.id, options.ids);
+  const states = new Map<string, ManagedEndpointState>();
+  const schemas = new Map<string, unknown>();
+  const endpointPlans: ManagedEndpointPlan[] = [];
+  let hasConflicts = false;
+  let hasNonConflictFailures = false;
+
+  for (const targetEndpoint of endpoints) {
+    const apiInfo = await getApiInfo(ctx, targetEndpoint);
+    requestState.requestId = apiInfo.requestId ?? requestState.requestId;
+    assertManagedListApi(targetEndpoint, apiInfo.data);
+    schemas.set(targetEndpoint, apiInfo.data);
+
+    const state = await loadManagedEndpointState(options.dir, targetEndpoint);
+    states.set(targetEndpoint, state);
+    const items = await buildManagedEndpointPlan(
+      ctx,
+      targetEndpoint,
+      apiInfo.data,
+      state,
+      selectors,
+      Boolean(options.onlyChanged),
+      requestState,
+    );
+    if (items.some((item) => item.conflict)) {
+      hasConflicts = true;
+    }
+    if (items.some((item) => !item.valid || !item.dryRunOk || item.errors.length > 0)) {
+      hasNonConflictFailures = true;
+    }
+    endpointPlans.push({
+      endpoint: targetEndpoint,
+      items,
+    });
+  }
+
+  return {
+    rootDir: options.dir,
+    requestId: requestState.requestId,
+    endpoints: endpointPlans,
+    states,
+    schemas,
+    hasConflicts,
+    hasNonConflictFailures,
+    exitCode: hasNonConflictFailures
+      ? EXIT_CODE.INVALID_INPUT
+      : hasConflicts
+        ? EXIT_CODE.CONFLICT
+        : EXIT_CODE.SUCCESS,
+  };
+}
+
+async function buildManagedEndpointPlan(
+  ctx: RuntimeContext,
+  endpoint: string,
+  schema: unknown,
+  state: ManagedEndpointState,
+  selectors: string[],
+  onlyChanged: boolean,
+  requestState: ManagedRequestState,
+): Promise<ManagedPlanItem[]> {
+  const items: ManagedPlanItem[] = [];
+  const localRecordMap = new Map(state.localRecords.map((record) => [record.id, record]));
+
+  for (const localRecord of state.localRecords) {
+    if (!matchesManagedSelector(localRecord.id, localRecord.fileName, selectors)) {
+      continue;
+    }
+    if (
+      onlyChanged &&
+      localRecord.manifestRecord &&
+      localRecord.manifestRecord.sha256 === localRecord.sha256
+    ) {
+      continue;
+    }
+    items.push(await verifyManagedRecord(ctx, endpoint, schema, localRecord, requestState));
+  }
+
+  for (const tombstone of state.tombstones) {
+    if (!matchesManagedSelector(tombstone.id, tombstone.fileName, selectors)) {
+      continue;
+    }
+    items.push(
+      await verifyManagedDelete(
+        ctx,
+        endpoint,
+        tombstone,
+        state.manifest,
+        localRecordMap,
+        requestState,
+      ),
+    );
+  }
+
+  return items.sort((left, right) => {
+    if (left.action !== right.action) {
+      return left.action.localeCompare(right.action);
+    }
+    return left.file.localeCompare(right.file);
+  });
+}
+
+async function verifyManagedRecord(
+  ctx: RuntimeContext,
+  endpoint: string,
+  schema: unknown,
+  localRecord: ManagedLocalRecord,
+  requestState: ManagedRequestState,
+): Promise<ManagedPlanItem> {
+  const validation = validatePayload(localRecord.payload, schema);
+  const errors = [...validation.errors];
+  const warnings = [...validation.warnings];
+  let dryRunOk = validation.valid;
+  let conflict = false;
+
+  if (localRecord.manifestRecord) {
+    const remoteResult = await getManagedRemoteState(
+      ctx,
+      endpoint,
+      localRecord.manifestRecord.id,
+      requestState,
+    );
+    if (remoteResult.kind === "missing") {
+      errors.push(`Remote content not found: ${localRecord.manifestRecord.id}`);
+      dryRunOk = false;
+    } else if (remoteResult.kind === "ok") {
+      if (localRecord.manifestRecord.remoteUpdatedAt !== remoteResult.updatedAt) {
+        conflict = true;
+      }
+    }
+  }
+
+  return {
+    endpoint,
+    action: localRecord.manifestRecord ? "update" : "create",
+    selector: localRecord.id,
+    id: localRecord.manifestRecord?.id ?? localRecord.id,
+    file: localRecord.relativePath,
+    payload: localRecord.payload,
+    localRecord,
+    tombstone: null,
+    manifestRecord: localRecord.manifestRecord,
+    valid: validation.valid,
+    dryRunOk,
+    conflict,
+    errors,
+    warnings,
+  };
+}
+
+async function verifyManagedDelete(
+  ctx: RuntimeContext,
+  endpoint: string,
+  tombstone: ManagedTombstone,
+  manifest: ManagedManifest,
+  localRecordMap: Map<string, ManagedLocalRecord>,
+  requestState: ManagedRequestState,
+): Promise<ManagedPlanItem> {
+  const errors: string[] = [];
+  const manifestRecord = manifest.records.find((record) => record.id === tombstone.id) ?? null;
+  if (localRecordMap.has(tombstone.id)) {
+    errors.push(`Delete tombstone conflicts with existing record file: ${tombstone.id}`);
+  }
+  if (!manifestRecord) {
+    errors.push(`Delete tombstone requires manifest entry: ${tombstone.id}`);
+  }
+
+  let dryRunOk = errors.length === 0;
+  let conflict = false;
+  if (manifestRecord) {
+    const remoteResult = await getManagedRemoteState(ctx, endpoint, tombstone.id, requestState);
+    if (remoteResult.kind === "missing") {
+      errors.push(`Remote content not found: ${tombstone.id}`);
+      dryRunOk = false;
+    } else if (remoteResult.kind === "ok") {
+      if (manifestRecord.remoteUpdatedAt !== remoteResult.updatedAt) {
+        conflict = true;
+      }
+    }
+  }
+
+  return {
+    endpoint,
+    action: "delete",
+    selector: tombstone.id,
+    id: tombstone.id,
+    file: tombstone.relativePath,
+    payload: null,
+    localRecord: null,
+    tombstone,
+    manifestRecord,
+    valid: errors.length === 0,
+    dryRunOk,
+    conflict,
+    errors,
+    warnings: [],
+  };
+}
+
+async function executeManagedPlan(
+  ctx: RuntimeContext,
+  plan: ManagedPlanResult,
+  force: boolean,
+): Promise<{ data: Record<string, unknown>; requestId: string | null; exitCode: number }> {
+  const requestState = { requestId: plan.requestId };
+  const results: Array<Record<string, unknown>> = [];
+  let attempted = 0;
+  let succeeded = 0;
+  let failed = 0;
+
+  const ordered = plan.endpoints.flatMap((endpointPlan) => endpointPlan.items);
+  const executionOrder: ManagedPlanAction[] = ["create", "update", "delete"];
+
+  for (const action of executionOrder) {
+    for (const item of ordered.filter((candidate) => candidate.action === action)) {
+      if (!item.valid || !item.dryRunOk || item.errors.length > 0) {
+        continue;
+      }
+      if (item.conflict && !force) {
+        continue;
+      }
+
+      attempted += 1;
+      try {
+        const result =
+          action === "create"
+            ? await executeManagedCreate(ctx, plan, item, requestState)
+            : action === "update"
+              ? await executeManagedUpdate(ctx, plan, item, requestState)
+              : await executeManagedDelete(ctx, plan, item, requestState);
+        succeeded += 1;
+        results.push(result);
+      } catch (error) {
+        const normalized = normalizeError(error);
+        failed += 1;
+        results.push({
+          endpoint: item.endpoint,
+          action: item.action,
+          id: item.id,
+          file: item.file,
+          status: "failed",
+          error: normalized.toJson({ includeDetails: ctx.verbose }),
+        });
+        return {
+          data: {
+            attempted,
+            succeeded,
+            failed,
+            results,
+          },
+          requestId: requestState.requestId,
+          exitCode: normalized.exitCode,
+        };
+      }
+    }
+  }
+
+  return {
+    data: {
+      attempted,
+      succeeded,
+      failed,
+      results,
+    },
+    requestId: requestState.requestId,
+    exitCode: EXIT_CODE.SUCCESS,
+  };
+}
+
+async function executeManagedCreate(
+  ctx: RuntimeContext,
+  plan: ManagedPlanResult,
+  item: ManagedPlanItem,
+  requestState: ManagedRequestState,
+): Promise<Record<string, unknown>> {
+  if (!item.localRecord || !item.payload) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: "Create execution requires a local record payload.",
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  const created = await createContent(ctx, item.endpoint, item.payload);
+  requestState.requestId = created.requestId ?? requestState.requestId;
+  const createdId = extractIdFromResponse(created.data);
+  if (!createdId) {
+    throw new CliError({
+      code: "API_ERROR",
+      message: `Create response did not include an id for endpoint: ${item.endpoint}`,
+      exitCode: EXIT_CODE.UNKNOWN,
+    });
+  }
+
+  const fresh = await getContent(ctx, item.endpoint, createdId);
+  requestState.requestId = fresh.requestId ?? requestState.requestId;
+  const schema = plan.schemas.get(item.endpoint);
+  const state = getManagedState(plan.states, item.endpoint);
+  const freshRecord = parseManagedContentObject(fresh.data, item.endpoint, createdId);
+  const normalized = normalizeManagedPayload(schema, freshRecord);
+  await replaceManagedRecordFile(
+    state.paths,
+    item.localRecord.fileName,
+    `${createdId}.json`,
+    normalized,
+  );
+
+  const manifestRecord = createManagedManifestRecord({
+    id: createdId,
+    fileName: `${createdId}.json`,
+    payload: normalized,
+    remoteUpdatedAt: extractRemoteTimestamp(freshRecord, "updatedAt"),
+    remotePublishedAt: extractRemoteTimestamp(freshRecord, "publishedAt"),
+  });
+  state.manifest = upsertManagedManifestRecord(state.manifest, manifestRecord);
+  state.manifest.pulledAt = new Date().toISOString();
+  await writeManagedManifest(state.paths, state.manifest);
+
+  return {
+    endpoint: item.endpoint,
+    action: "create",
+    id: createdId,
+    source: item.localRecord.relativePath,
+    status: "succeeded",
+  };
+}
+
+async function executeManagedUpdate(
+  ctx: RuntimeContext,
+  plan: ManagedPlanResult,
+  item: ManagedPlanItem,
+  requestState: ManagedRequestState,
+): Promise<Record<string, unknown>> {
+  if (!item.localRecord || !item.payload || !item.manifestRecord) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: "Update execution requires a local record payload and manifest record.",
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  const updated = await updateContent(ctx, item.endpoint, item.manifestRecord.id, item.payload);
+  requestState.requestId = updated.requestId ?? requestState.requestId;
+  const fresh = await getContent(ctx, item.endpoint, item.manifestRecord.id);
+  requestState.requestId = fresh.requestId ?? requestState.requestId;
+  const schema = plan.schemas.get(item.endpoint);
+  const state = getManagedState(plan.states, item.endpoint);
+  const freshRecord = parseManagedContentObject(fresh.data, item.endpoint, item.manifestRecord.id);
+  const normalized = normalizeManagedPayload(schema, freshRecord);
+  await replaceManagedRecordFile(
+    state.paths,
+    item.localRecord.fileName,
+    `${item.manifestRecord.id}.json`,
+    normalized,
+  );
+
+  const manifestRecord = createManagedManifestRecord({
+    id: item.manifestRecord.id,
+    fileName: `${item.manifestRecord.id}.json`,
+    payload: normalized,
+    remoteUpdatedAt: extractRemoteTimestamp(freshRecord, "updatedAt"),
+    remotePublishedAt: extractRemoteTimestamp(freshRecord, "publishedAt"),
+  });
+  state.manifest = upsertManagedManifestRecord(state.manifest, manifestRecord);
+  state.manifest.pulledAt = new Date().toISOString();
+  await writeManagedManifest(state.paths, state.manifest);
+
+  return {
+    endpoint: item.endpoint,
+    action: "update",
+    id: item.manifestRecord.id,
+    source: item.localRecord.relativePath,
+    status: "succeeded",
+  };
+}
+
+async function executeManagedDelete(
+  ctx: RuntimeContext,
+  plan: ManagedPlanResult,
+  item: ManagedPlanItem,
+  requestState: ManagedRequestState,
+): Promise<Record<string, unknown>> {
+  if (!item.tombstone || !item.manifestRecord) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: "Delete execution requires a tombstone and manifest record.",
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  const deleted = await deleteContent(ctx, item.endpoint, item.manifestRecord.id);
+  requestState.requestId = deleted.requestId ?? requestState.requestId;
+  const state = getManagedState(plan.states, item.endpoint);
+  state.manifest = removeManagedManifestRecord(state.manifest, item.manifestRecord.id);
+  state.manifest.pulledAt = new Date().toISOString();
+  await writeManagedManifest(state.paths, state.manifest);
+  await deleteManagedTombstone(state.paths, item.tombstone.fileName);
+
+  return {
+    endpoint: item.endpoint,
+    action: "delete",
+    id: item.manifestRecord.id,
+    source: item.tombstone.relativePath,
+    status: "succeeded",
+  };
+}
+
+function renderManagedVerifyPayload(
+  operation: "content.verify" | "content.push",
+  dir: string,
+  plan: ManagedPlanResult,
+): Record<string, unknown> {
+  const endpoints = plan.endpoints.map((endpointPlan) => {
+    const counts = {
+      create: endpointPlan.items.filter((item) => item.action === "create").length,
+      update: endpointPlan.items.filter((item) => item.action === "update").length,
+      delete: endpointPlan.items.filter((item) => item.action === "delete").length,
+      conflicts: endpointPlan.items.filter((item) => item.conflict).length,
+      failed: endpointPlan.items.filter(
+        (item) => !item.valid || !item.dryRunOk || item.errors.length > 0 || item.conflict,
+      ).length,
+    };
+
+    return {
+      endpoint: endpointPlan.endpoint,
+      counts,
+      records: endpointPlan.items.map((item) => ({
+        id: item.id,
+        file: item.file,
+        action: item.action,
+        valid: item.valid,
+        dryRunOk: item.dryRunOk,
+        conflict: item.conflict,
+        errors: item.errors,
+        warnings: item.warnings,
+      })),
+    };
+  });
+
+  return {
+    operation,
+    dir,
+    endpointCount: endpoints.length,
+    totalRecords: endpoints.reduce((sum, endpointEntry) => sum + endpointEntry.records.length, 0),
+    hasFailures: plan.exitCode !== EXIT_CODE.SUCCESS,
+    endpoints,
+  };
+}
+
+async function listManagedPullEndpoints(
+  ctx: RuntimeContext,
+  requestState: ManagedRequestState,
+): Promise<string[]> {
+  const listed = await listApis(ctx);
+  requestState.requestId = listed.requestId ?? requestState.requestId;
+  const endpoints = extractApiEndpoints(listed.data);
+  const targets: string[] = [];
+
+  for (const endpoint of endpoints) {
+    const info = await getApiInfo(ctx, endpoint);
+    requestState.requestId = info.requestId ?? requestState.requestId;
+    if (detectApiEndpointType(info.data) === "object") {
+      continue;
+    }
+    targets.push(endpoint);
+  }
+
+  return targets;
+}
+
+async function fetchAllManagedContent(
+  ctx: RuntimeContext,
+  endpoint: string,
+  requestState: ManagedRequestState,
+): Promise<Record<string, unknown>[]> {
+  const result = await listContentAllWithFetcher(ctx, endpoint, {}, (queries) =>
+    listContent(ctx, endpoint, queries),
+  );
+  requestState.requestId = result.requestId ?? requestState.requestId;
+  const page = parseListShape(result.data);
+  if (!page) {
+    throw new CliError({
+      code: "API_ERROR",
+      message: "content pull requires a list response containing `contents` and `totalCount`.",
+      exitCode: EXIT_CODE.UNKNOWN,
+    });
+  }
+
+  return page.contents.map((item, index) =>
+    parseManagedContentObject(item, endpoint, `list-index-${index}`),
+  );
+}
+
+async function fetchManagedContentByIds(
+  ctx: RuntimeContext,
+  endpoint: string,
+  ids: string[],
+  requestState: ManagedRequestState,
+): Promise<Record<string, unknown>[]> {
+  const records: Record<string, unknown>[] = [];
+  for (const id of ids) {
+    const result = await getContent(ctx, endpoint, id);
+    requestState.requestId = result.requestId ?? requestState.requestId;
+    records.push(parseManagedContentObject(result.data, endpoint, id));
+  }
+
+  return records;
+}
+
+async function resolveManagedEndpoints(
+  endpoint: string | undefined,
+  dir: string,
+  endpointsOption: string | undefined,
+): Promise<string[]> {
+  if (endpoint && endpointsOption) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: "Do not pass [endpoint] together with --endpoints.",
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  if (endpoint) {
+    return [endpoint];
+  }
+
+  const parsed = parseCsvOption(endpointsOption);
+  if (parsed.length > 0) {
+    return parsed;
+  }
+
+  const discovered = await discoverManagedEndpoints(dir);
+  if (discovered.length === 0) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: `No managed endpoints were found in: ${dir}`,
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  return discovered;
+}
+
+async function classifyManagedLocalRecordStatus(
+  ctx: RuntimeContext,
+  endpoint: string,
+  localRecord: ManagedLocalRecord,
+  requestState: ManagedRequestState,
+): Promise<string> {
+  if (localRecord.manifestRecord) {
+    const remoteResult = await getManagedRemoteState(
+      ctx,
+      endpoint,
+      localRecord.manifestRecord.id,
+      requestState,
+    );
+    if (remoteResult.kind === "missing") {
+      return "remote_missing";
+    }
+
+    return localRecord.manifestRecord.remoteUpdatedAt === remoteResult.updatedAt
+      ? "in_sync"
+      : "stale_remote";
+  }
+
+  const remoteResult = await getManagedRemoteState(ctx, endpoint, localRecord.id, requestState);
+  return remoteResult.kind === "ok" ? "manifest_missing" : "local_only";
+}
+
+async function getManagedRemoteState(
+  ctx: RuntimeContext,
+  endpoint: string,
+  id: string,
+  requestState: ManagedRequestState,
+): Promise<
+  { kind: "ok"; updatedAt: string | null; publishedAt: string | null } | { kind: "missing" }
+> {
+  try {
+    const result = await getContent(ctx, endpoint, id);
+    requestState.requestId = result.requestId ?? requestState.requestId;
+    const content = parseManagedContentObject(result.data, endpoint, id);
+    return {
+      kind: "ok",
+      updatedAt: extractRemoteTimestamp(content, "updatedAt"),
+      publishedAt: extractRemoteTimestamp(content, "publishedAt"),
+    };
+  } catch (error) {
+    const normalized = normalizeError(error);
+    if (normalized.code === "NOT_FOUND") {
+      return { kind: "missing" };
+    }
+    throw normalized;
+  }
+}
+
+function assertManagedListApi(endpoint: string, data: unknown): void {
+  if (detectApiEndpointType(data) === "object") {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: `managed-json workflow v1 supports list APIs only: ${endpoint}`,
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+}
+
+function parseManagedFormat(value: string | undefined): string {
+  const format = value?.trim().toLowerCase() ?? MANAGED_JSON_FORMAT;
+  if (format === MANAGED_JSON_FORMAT) {
+    return format;
+  }
+
+  throw new CliError({
+    code: "INVALID_INPUT",
+    message: `Invalid format: ${value ?? ""}. Expected ${MANAGED_JSON_FORMAT}.`,
+    exitCode: EXIT_CODE.INVALID_INPUT,
+  });
+}
+
+function parseManagedSelectors(id: string | undefined, ids: string | undefined): string[] {
+  if (id && ids) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: "Do not pass --id together with --ids.",
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  if (id) {
+    const value = id.trim();
+    if (value.length === 0) {
+      throw new CliError({
+        code: "INVALID_INPUT",
+        message: "--id must not be empty.",
+        exitCode: EXIT_CODE.INVALID_INPUT,
+      });
+    }
+    return [value];
+  }
+
+  return parseCsvOption(ids);
+}
+
+function parseCsvOption(value: string | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  const entries = value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+  return [...new Set(entries)];
+}
+
+function matchesManagedSelector(id: string, fileName: string, selectors: string[]): boolean {
+  if (selectors.length === 0) {
+    return true;
+  }
+
+  const baseName = fileName.replace(/\.json$/u, "");
+  return selectors.includes(id) || selectors.includes(fileName) || selectors.includes(baseName);
+}
+
+function parseManagedContentObject(
+  data: unknown,
+  endpoint: string,
+  idHint: string,
+): Record<string, unknown> {
+  if (isPlainRecord(data)) {
+    return data;
+  }
+
+  throw new CliError({
+    code: "API_ERROR",
+    message: `Managed content requires a JSON object response: ${endpoint}/${idHint}`,
+    exitCode: EXIT_CODE.UNKNOWN,
+  });
+}
+
+function extractRequiredContentId(data: Record<string, unknown>, endpoint: string): string {
+  const id = extractIdFromResponse(data);
+  if (id) {
+    return id;
+  }
+
+  throw new CliError({
+    code: "API_ERROR",
+    message: `Content response did not include id for endpoint: ${endpoint}`,
+    exitCode: EXIT_CODE.UNKNOWN,
+  });
+}
+
+function extractRemoteTimestamp(
+  data: Record<string, unknown>,
+  field: "updatedAt" | "publishedAt",
+): string | null {
+  const value = data[field];
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function getManagedState(
+  states: Map<string, ManagedEndpointState>,
+  endpoint: string,
+): ManagedEndpointState {
+  const state = states.get(endpoint);
+  if (state) {
+    return state;
+  }
+
+  throw new CliError({
+    code: "INVALID_INPUT",
+    message: `Managed endpoint state is unavailable: ${endpoint}`,
+    exitCode: EXIT_CODE.INVALID_INPUT,
+  });
+}
+
+function countManagedStatuses(records: Array<Record<string, unknown>>): Record<string, number> {
+  const counts: Record<string, number> = {
+    in_sync: 0,
+    stale_remote: 0,
+    local_only: 0,
+    pending_delete: 0,
+    remote_missing: 0,
+    manifest_missing: 0,
+  };
+
+  for (const record of records) {
+    const status = record.status;
+    if (typeof status === "string" && status in counts) {
+      counts[status] += 1;
+    }
+  }
+
+  return counts;
+}
+
 function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(value).filter(([, item]) => item !== undefined),
@@ -1235,29 +2396,6 @@ function escapeCsv(value: CsvScalar | undefined): string {
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function detectApiEndpointType(data: unknown): "list" | "object" | "unknown" {
-  if (!isPlainRecord(data)) {
-    return "unknown";
-  }
-
-  const candidates = [data.apiType, data.type, data.apiTypeName];
-  for (const candidate of candidates) {
-    if (typeof candidate !== "string") {
-      continue;
-    }
-
-    const normalized = candidate.trim().toLowerCase();
-    if (normalized === "list") {
-      return "list";
-    }
-    if (normalized === "object") {
-      return "object";
-    }
-  }
-
-  return "unknown";
 }
 
 type ContentDiffEntry = {

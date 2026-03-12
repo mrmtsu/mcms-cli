@@ -13,6 +13,10 @@ describe("cli spec", () => {
     expect(spec.commands.some((command) => command.path === "member get")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content meta list")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content meta get")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "content pull")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "content verify")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "content push")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "content sync-status")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content status set")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content created-by set")).toBe(true);
     expect(spec.commands.some((command) => command.path === "media list")).toBe(true);

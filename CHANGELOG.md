@@ -8,8 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added managed-json workflow commands: `content pull`, `content verify`, `content push`, and `content sync-status`.
+
+### Changed
+- Added managed-json content normalization/manifest handling for list APIs and documented the first-cut constraints in README / README.ja.
+
+### Tests
+- Added unit/e2e/contract coverage for the managed-json workflow commands and their command spec exposure.
+
+## [0.6.0] - 2026-03-04
+
+### Added
 - Added `task` command group with `task list`, `task suggest`, and `task guide` to provide task-oriented workflow discovery and runbook output for agent/CI usage.
 - Added operation risk policy metadata (`requiresConfirmation`, `riskLevel`, `confirmationReason`) and surfaced it in write-operation dry-run outputs plus `content import` / `content bulk` summaries.
+- Added a full Japanese changelog mirror (`CHANGELOG.ja.md`) and linked the language policy from contributor guidance.
 
 ### Changed
 - Always include detailed diagnostics (`error.details`, including `issues`) in JSON mode for payload validation failures in `validate`, `content import`, and `content bulk`.
