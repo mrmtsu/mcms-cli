@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-03-12
+
 ### Added
 - Added managed-json workflow commands: `content pull`, `content verify`, `content push`, and `content sync-status`.
 
 ### Changed
 - Added managed-json content normalization/manifest handling for list APIs and documented the first-cut constraints in README / README.ja.
+- Added a `prepack` build step so `npm pack` / `npm publish` always include fresh `dist` output.
 
 ### Tests
 - Added unit/e2e/contract coverage for the managed-json workflow commands and their command spec exposure.
