@@ -138,7 +138,7 @@ microcms validate <endpoint> --file payload.json --json
 ```
 
 - `content export --all` exports list APIs. Object APIs are skipped.
-- `content pull` / `content verify` / `content push` / `content sync-status` are the managed-json first cut for file-based content-as-code workflows.
+- `content pull` / `content verify` / `content push` / `content sync-status` are the managed-json first cut for file-based content workflows.
 - managed-json v1 supports list APIs only. Object APIs, media sync, hooks/revalidate, and auto-merge are out of scope.
 - `content push` is verify-first by default and only performs remote writes when `--execute` is set.
 - delete is explicit-only in managed-json workflows. Removing a record file does not delete remote content; use `deletions/<id>.json` tombstones.

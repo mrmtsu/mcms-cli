@@ -138,7 +138,7 @@ microcms validate <endpoint> --file payload.json --json
 ```
 
 - `content export --all` は list API を対象にエクスポートし、object API はスキップします。
-- `content pull` / `content verify` / `content push` / `content sync-status` は、file-based な Content as Code 向け managed-json first cut です。
+- `content pull` / `content verify` / `content push` / `content sync-status` は、file-based なコンテンツ運用向け managed-json first cut です。
 - managed-json v1 は list API のみ対応です。object API、media 同期、hooks/revalidate、自動マージは対象外です。
 - `content push` はデフォルトで verify のみ行い、remote 書き込みは `--execute` 指定時だけ行います。
 - managed-json の delete は明示 tombstone 方式です。record file を消しただけでは remote delete されません。

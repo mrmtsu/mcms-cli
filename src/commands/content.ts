@@ -1865,7 +1865,7 @@ function assertManagedListApi(endpoint: string, data: unknown): void {
   if (detectApiEndpointType(data) === "object") {
     throw new CliError({
       code: "INVALID_INPUT",
-      message: `content-as-code v1 supports list APIs only: ${endpoint}`,
+      message: `managed-json workflow v1 supports list APIs only: ${endpoint}`,
       exitCode: EXIT_CODE.INVALID_INPUT,
     });
   }

@@ -207,7 +207,7 @@ const COMMANDS: CommandSpec[] = [
   },
   {
     path: "content pull",
-    description: "pull content into managed-json files for content-as-code workflows",
+    description: "pull content into managed-json files for file-based content workflows",
     args: ["[endpoint]"],
     options: ["--out <dir>", "--all", "--id <id>", "--ids <ids>", "--format <format>"],
     readOnly: true,
