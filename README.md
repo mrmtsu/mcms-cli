@@ -144,6 +144,7 @@ microcms validate <endpoint> --file payload.json --json
 - delete is explicit-only in managed-json workflows. Removing a record file does not delete remote content; use `deletions/<id>.json` tombstones.
 - `content bulk --dry-run` checks operation-file structure without API calls.
 - Add `--validate-payload` (or `--strict-warnings`) when you want schema-based payload checks.
+- Single select fields are accepted as either `"value"` or `["value"]` in CLI payloads. `managed-json` stores single select as a string, and write execution normalizes it to the array shape expected by the API.
 
 ### Docs and Agent references (no API key / service domain required)
 

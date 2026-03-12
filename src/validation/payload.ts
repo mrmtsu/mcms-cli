@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { extractAllowedValues, extractApiFields, normalizeKind } from "../core/api-field-utils.js";
+import {
+  extractAllowedValues,
+  extractApiFields,
+  isFieldMultiple,
+  normalizeKind,
+} from "../core/api-field-utils.js";
 
 const payloadSchema = z.record(z.string(), z.unknown());
 
@@ -37,6 +42,7 @@ type ApiField = {
   inputType?: string;
   multiple?: boolean;
   isMultiple?: boolean;
+  multipleSelect?: boolean;
   selectItems?: unknown;
   options?: unknown;
 };
@@ -120,6 +126,25 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
     const field = knownFields.get(key);
     if (!field) {
       continue;
+    }
+
+    const kind = normalizeKind(field.kind);
+    if (kind === "select" && !isFieldMultiple(field)) {
+      if (!matchesSingleSelectValue(value)) {
+        const actualType = describeValueType(value);
+        const message = `Field type mismatch: ${key} expected string or single-item array (actual ${actualType})`;
+        errors.push(message);
+        issues.push({
+          level: "error",
+          code: "FIELD_TYPE_MISMATCH",
+          path: formatIssuePath([key]),
+          field: key,
+          reason: message,
+          expected: "string|string[]",
+          actual: actualType,
+        });
+        continue;
+      }
     }
 
     const expectedType = inferExpectedType(field);
@@ -233,15 +258,28 @@ function inferExpectedType(field: ApiField): ExpectedValueType | null {
     case "time":
     case "slug":
     case "url":
-    case "select":
     case "radio":
       return "string";
+    case "select":
+      return isFieldMultiple(field) ? "array" : null;
     case "relation":
-      return field.multiple || field.isMultiple ? "array" : null;
+      return isFieldMultiple(field) ? "array" : null;
     default:
       // Unknown kinds are skipped to avoid false-positive type errors.
       return null;
   }
+}
+
+function matchesSingleSelectValue(value: unknown): boolean {
+  if (typeof value === "string") {
+    return true;
+  }
+
+  if (!Array.isArray(value)) {
+    return false;
+  }
+
+  return value.length <= 1 && value.every((item) => typeof item === "string");
 }
 
 function normalizeTypeHint(value: unknown): ExpectedValueType | null {

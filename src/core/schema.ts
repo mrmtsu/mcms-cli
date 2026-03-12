@@ -1,4 +1,9 @@
-import { extractAllowedValues, extractApiFields, normalizeKind } from "./api-field-utils.js";
+import {
+  extractAllowedValues,
+  extractApiFields,
+  isFieldMultiple as isMultiValueField,
+  normalizeKind,
+} from "./api-field-utils.js";
 
 export type SchemaBundle = {
   version: "0.x";
@@ -494,7 +499,7 @@ function isFieldRequired(field: ApiField): boolean {
 }
 
 function isFieldMultiple(field: ApiField): boolean {
-  return Boolean(field.multiple) || Boolean(field.isMultiple);
+  return isMultiValueField(field);
 }
 
 function normalizeString(value: unknown): string | null {
