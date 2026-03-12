@@ -9,16 +9,27 @@
 
 ### 追加
 - managed-json ベースの Content as Code first cut として、`content pull` / `content verify` / `content push` / `content sync-status` を追加した。
-- `task` コマンド群（`task list` / `task suggest` / `task guide`）を追加し、エージェント/CI向けにタスク起点の実行候補提示と runbook 出力を提供するようにした。
-- 操作リスクメタデータ（`requiresConfirmation` / `riskLevel` / `confirmationReason`）を追加し、書き込み系 dry-run 出力および `content import` / `content bulk` の結果に含めるようにした。
 
 ### 変更
 - list API 向けに managed-json の正規化/manifest 管理を追加し、README / README.ja に first cut の制約を反映した。
+
+### テスト
+- managed-json の Content as Code ワークフローと、そのコマンド仕様公開を対象とした unit/e2e/contract テストを追加した。
+
+## [0.6.0] - 2026-03-04
+
+### 追加
+- `task` コマンド群（`task list` / `task suggest` / `task guide`）を追加し、エージェント/CI向けにタスク起点の実行候補提示と runbook 出力を提供するようにした。
+- 操作リスクメタデータ（`requiresConfirmation` / `riskLevel` / `confirmationReason`）を追加し、書き込み系 dry-run 出力および `content import` / `content bulk` の結果に含めるようにした。
+- 日本語版の変更履歴ミラー（`CHANGELOG.ja.md`）を追加し、Contributor 向けの言語運用方針を整理した。
+
+### 変更
+- `validate`、`content import`、`content bulk` の payload 検証失敗時に、JSON モードでは常に詳細診断（`error.details`、`issues` を含む）を返すようにした。
+- payload バリデーション結果に構造化された `issues`（`field` / `path` / `reason` / `expected` / `actual`）を追加し、失敗メッセージを簡潔な要因サマリ付きに改善した。
 - `task` コマンド群の追加に合わせて、シェル補完およびコマンド仕様（`spec`）の公開メタデータを更新した。
 - README / README.ja のコマンド例を更新し、task workflow helper の利用例を追加した。
 
 ### テスト
-- managed-json の Content as Code ワークフローと、そのコマンド仕様公開を対象とした unit/e2e/contract テストを追加した。
 - 操作リスクポリシーと task workflow のランク付け/guide生成に対する unit テストを追加した。
 - `task` コマンドと、dry-run 確認メタデータ契約を検証する agent workflow シナリオの e2e テストを追加した。
 

@@ -9,18 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added managed-json based content-as-code workflow commands: `content pull`, `content verify`, `content push`, and `content sync-status`.
-- Added `task` command group with `task list`, `task suggest`, and `task guide` to provide task-oriented workflow discovery and runbook output for agent/CI usage.
-- Added operation risk policy metadata (`requiresConfirmation`, `riskLevel`, `confirmationReason`) and surfaced it in write-operation dry-run outputs plus `content import` / `content bulk` summaries.
 
 ### Changed
 - Added managed-json content normalization/manifest handling for list APIs and documented the first-cut constraints in README / README.ja.
+
+### Tests
+- Added unit/e2e/contract coverage for the managed-json content-as-code workflow commands and their command spec exposure.
+
+## [0.6.0] - 2026-03-04
+
+### Added
+- Added `task` command group with `task list`, `task suggest`, and `task guide` to provide task-oriented workflow discovery and runbook output for agent/CI usage.
+- Added operation risk policy metadata (`requiresConfirmation`, `riskLevel`, `confirmationReason`) and surfaced it in write-operation dry-run outputs plus `content import` / `content bulk` summaries.
+- Added a full Japanese changelog mirror (`CHANGELOG.ja.md`) and linked the language policy from contributor guidance.
+
+### Changed
 - Always include detailed diagnostics (`error.details`, including `issues`) in JSON mode for payload validation failures in `validate`, `content import`, and `content bulk`.
 - Added structured `issues` (`field` / `path` / `reason` / `expected` / `actual`) to payload validation results and improved failure messages with concise root-cause summaries.
 - Updated shell completion and command spec metadata to expose the new `task` command group.
 - Updated README / README.ja command examples to include task workflow helper usage.
 
 ### Tests
-- Added unit/e2e/contract coverage for the managed-json content-as-code workflow commands and their command spec exposure.
 - Added unit tests for operation risk policies and task workflow ranking/guide generation.
 - Added e2e tests for `task` commands and agent workflow scenarios that assert dry-run confirmation metadata contracts.
 
