@@ -7,10 +7,19 @@
 
 ## [Unreleased]
 
+<<<<<<< Updated upstream
 ### 変更
 - single select フィールドの CLI payload 検証で `"value"` と `["value"]` の両方を受け付けるようにしつつ、managed-json 上の保存形式は string のまま維持するようにした。
 - `content create/update/import/bulk/push --execute` の書き込み実行前に、schema が取得できる場合は single select を microCMS API 互換の配列 shape へ正規化するようにした。
 - README / README.ja / CLI 仕様書に、managed-json・validate・execute をまたぐ single select 正規化の挙動を追記した。
+=======
+## [0.7.2] - 2026-03-13
+
+### 変更
+- single select フィールドの CLI payload 検証で `"value"` と `["value"]` の両方を受け付けるようにしつつ、managed-json 上の保存形式は string のまま維持するようにした。
+- `content create/update/import/bulk/push --execute` の書き込み実行前に、schema が取得できる場合は single select を microCMS API 互換の配列 shape へ正規化するようにした。
+- README / README.ja に、managed-json・validate・execute をまたぐ single select 正規化の挙動を追記した。
+>>>>>>> Stashed changes
 
 ### テスト
 - single select を含む managed-json push 実行と direct content update の回帰テストを追加した。
