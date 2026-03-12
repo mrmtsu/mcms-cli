@@ -43,6 +43,7 @@ import { EXIT_CODE } from "../core/exit-codes.js";
 import { assertObjectPayload, readJsonFile } from "../core/io.js";
 import { withOperationConfirmation } from "../core/operation-risk.js";
 import { printSuccess } from "../core/output.js";
+import { normalizePayloadForWrite } from "../core/payload-normalization.js";
 import { extractApiEndpoints } from "../core/schema.js";
 import { parseBulkOperations, type BulkOperation } from "../validation/bulk-operations.js";
 import { validatePayload, type ValidationIssue } from "../validation/payload.js";
@@ -325,6 +326,7 @@ export function registerContentCommands(program: Command): void {
         const input = await readJsonFile(options.file);
         const items = parseImportItems(input);
         const shouldValidate = Boolean(options.dryRun || options.strictWarnings);
+        const schemaCache = new Map<string, unknown | null>();
         let validationRequestId: string | null = null;
         let checks: Array<{
           index: number;
@@ -338,6 +340,7 @@ export function registerContentCommands(program: Command): void {
         if (shouldValidate) {
           const schema = await getApiInfo(ctx, endpoint);
           validationRequestId = schema.requestId;
+          schemaCache.set(endpoint, schema.data);
           checks = items.map((item, index) => {
             const { id, payload } = splitImportItem(item);
             const validation = validatePayload(payload, schema.data);
@@ -408,10 +411,14 @@ export function registerContentCommands(program: Command): void {
         for (let index = 0; index < items.length; index += 1) {
           const item = items[index];
           const { id, payload } = splitImportItem(item);
+          const schema = await loadEndpointSchema(ctx, endpoint, schemaCache, {
+            requestId: validationRequestId,
+          });
+          const normalizedPayload = normalizePayloadForWrite(payload, schema);
 
           if (options.upsert && id) {
             try {
-              const updated = await updateContent(ctx, endpoint, id, payload);
+              const updated = await updateContent(ctx, endpoint, id, normalizedPayload);
               requestId = updated.requestId ?? requestId;
               results.push({
                 index: index + 1,
@@ -425,7 +432,7 @@ export function registerContentCommands(program: Command): void {
                 throw error;
               }
 
-              const created = await createContent(ctx, endpoint, payload);
+              const created = await createContent(ctx, endpoint, normalizedPayload);
               requestId = created.requestId ?? requestId;
               const createdId = extractIdFromResponse(created.data);
               results.push({
@@ -440,7 +447,7 @@ export function registerContentCommands(program: Command): void {
               );
             }
           } else {
-            const created = await createContent(ctx, endpoint, payload);
+            const created = await createContent(ctx, endpoint, normalizedPayload);
             requestId = created.requestId ?? requestId;
             const createdId = extractIdFromResponse(created.data);
             results.push({
@@ -508,6 +515,7 @@ export function registerContentCommands(program: Command): void {
         }
         const stopOnError = Boolean(options.stopOnError) || !options.continueOnError;
         const shouldValidate = Boolean(options.validatePayload || options.strictWarnings);
+        const schemaCache = new Map<string, unknown | null>();
         let validationRequestId: string | null = null;
         let checks: BulkValidationCheck[] = [];
 
@@ -525,6 +533,7 @@ export function registerContentCommands(program: Command): void {
           for (const endpoint of endpoints) {
             const info = await getApiInfo(ctx, endpoint);
             validationRequestId = info.requestId ?? validationRequestId;
+            schemaCache.set(endpoint, info.data);
             schemas.set(endpoint, info.data);
           }
 
@@ -604,7 +613,7 @@ export function registerContentCommands(program: Command): void {
           const target = operations[index];
           const operationLabel = formatBulkOperationLabel(target);
           try {
-            const executed = await executeBulkOperation(ctx, target);
+            const executed = await executeBulkOperation(ctx, target, schemaCache);
             requestId = executed.requestId ?? requestId;
             succeeded += 1;
             const resolvedId = "id" in target ? target.id : extractIdFromResponse(executed.data);
@@ -792,7 +801,12 @@ export function registerContentCommands(program: Command): void {
             return;
           }
 
-          const result = await createContent(ctx, endpoint, payload);
+          const schema = await loadEndpointSchema(ctx, endpoint, new Map<string, unknown | null>());
+          const result = await createContent(
+            ctx,
+            endpoint,
+            normalizePayloadForWrite(payload, schema),
+          );
           printSuccess(ctx, result.data, result.requestId);
         },
       ),
@@ -823,7 +837,13 @@ export function registerContentCommands(program: Command): void {
             return;
           }
 
-          const result = await updateContent(ctx, endpoint, id, payload);
+          const schema = await loadEndpointSchema(ctx, endpoint, new Map<string, unknown | null>());
+          const result = await updateContent(
+            ctx,
+            endpoint,
+            id,
+            normalizePayloadForWrite(payload, schema),
+          );
           printSuccess(ctx, result.data, result.requestId);
         },
       ),
@@ -1549,7 +1569,12 @@ async function executeManagedCreate(
     });
   }
 
-  const created = await createContent(ctx, item.endpoint, item.payload);
+  const schemaForWrite = plan.schemas.get(item.endpoint);
+  const created = await createContent(
+    ctx,
+    item.endpoint,
+    normalizePayloadForWrite(item.payload, schemaForWrite),
+  );
   requestState.requestId = created.requestId ?? requestState.requestId;
   const createdId = extractIdFromResponse(created.data);
   if (!createdId) {
@@ -1562,10 +1587,9 @@ async function executeManagedCreate(
 
   const fresh = await getContent(ctx, item.endpoint, createdId);
   requestState.requestId = fresh.requestId ?? requestState.requestId;
-  const schema = plan.schemas.get(item.endpoint);
   const state = getManagedState(plan.states, item.endpoint);
   const freshRecord = parseManagedContentObject(fresh.data, item.endpoint, createdId);
-  const normalized = normalizeManagedPayload(schema, freshRecord);
+  const normalized = normalizeManagedPayload(schemaForWrite, freshRecord);
   await replaceManagedRecordFile(
     state.paths,
     item.localRecord.fileName,
@@ -1607,14 +1631,19 @@ async function executeManagedUpdate(
     });
   }
 
-  const updated = await updateContent(ctx, item.endpoint, item.manifestRecord.id, item.payload);
+  const schemaForWrite = plan.schemas.get(item.endpoint);
+  const updated = await updateContent(
+    ctx,
+    item.endpoint,
+    item.manifestRecord.id,
+    normalizePayloadForWrite(item.payload, schemaForWrite),
+  );
   requestState.requestId = updated.requestId ?? requestState.requestId;
   const fresh = await getContent(ctx, item.endpoint, item.manifestRecord.id);
   requestState.requestId = fresh.requestId ?? requestState.requestId;
-  const schema = plan.schemas.get(item.endpoint);
   const state = getManagedState(plan.states, item.endpoint);
   const freshRecord = parseManagedContentObject(fresh.data, item.endpoint, item.manifestRecord.id);
-  const normalized = normalizeManagedPayload(schema, freshRecord);
+  const normalized = normalizeManagedPayload(schemaForWrite, freshRecord);
   await replaceManagedRecordFile(
     state.paths,
     item.localRecord.fileName,
@@ -2713,16 +2742,57 @@ function emitProgress(ctx: RuntimeContext, line: string): void {
 async function executeBulkOperation(
   ctx: RuntimeContext,
   operation: BulkOperation,
+  schemaCache: Map<string, unknown | null>,
 ): Promise<{ data: unknown; requestId: string | null }> {
   switch (operation.action) {
-    case "create":
-      return createContent(ctx, operation.endpoint, operation.payload);
-    case "update":
-      return updateContent(ctx, operation.endpoint, operation.id, operation.payload);
+    case "create": {
+      const schema = await loadEndpointSchema(ctx, operation.endpoint, schemaCache);
+      return createContent(
+        ctx,
+        operation.endpoint,
+        normalizePayloadForWrite(operation.payload, schema),
+      );
+    }
+    case "update": {
+      const schema = await loadEndpointSchema(ctx, operation.endpoint, schemaCache);
+      return updateContent(
+        ctx,
+        operation.endpoint,
+        operation.id,
+        normalizePayloadForWrite(operation.payload, schema),
+      );
+    }
     case "delete":
       return deleteContent(ctx, operation.endpoint, operation.id);
     case "status":
       return patchContentStatus(ctx, operation.endpoint, operation.id, operation.status);
+  }
+}
+
+async function loadEndpointSchema(
+  ctx: RuntimeContext,
+  endpoint: string,
+  schemaCache: Map<string, unknown | null>,
+  requestState?: { requestId: string | null },
+): Promise<unknown | null> {
+  if (schemaCache.has(endpoint)) {
+    return schemaCache.get(endpoint);
+  }
+
+  try {
+    const info = await getApiInfo(ctx, endpoint);
+    if (requestState) {
+      requestState.requestId = info.requestId ?? requestState.requestId;
+    }
+    schemaCache.set(endpoint, info.data);
+    return info.data;
+  } catch (error) {
+    if (!(error instanceof CliError)) {
+      throw error;
+    }
+
+    schemaCache.set(endpoint, null);
+    return null;
   }
 }
 

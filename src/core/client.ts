@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
+import { extractApiFields, isFieldMultiple, normalizeKind } from "./api-field-utils.js";
 import type { RuntimeContext } from "./context.js";
 import { CliError, fromHttpStatus } from "./errors.js";
 import { EXIT_CODE } from "./exit-codes.js";
@@ -663,6 +664,7 @@ async function runMockCreate(
   verbose = false,
 ): Promise<{ data: unknown; requestId: string }> {
   const store = await readMockStore(mockFilePath, verbose);
+  assertMockPayloadMatchesSchema(store.schemas?.[endpoint], content, endpoint);
   if (!store.endpoints[endpoint]) {
     store.endpoints[endpoint] = {};
   }
@@ -689,6 +691,7 @@ async function runMockUpdate(
   verbose = false,
 ): Promise<{ data: unknown; requestId: string }> {
   const store = await readMockStore(mockFilePath, verbose);
+  assertMockPayloadMatchesSchema(store.schemas?.[endpoint], content, endpoint, contentId);
   const endpointStore = store.endpoints[endpoint] ?? {};
   if (!endpointStore[contentId]) {
     throw fromHttpStatus(404, "mock content not found", {
@@ -796,6 +799,46 @@ async function readMockStore(path: string, verbose = false): Promise<MockContent
 
 async function writeMockStore(path: string, store: MockContentStore): Promise<void> {
   await writeFile(path, JSON.stringify(store, null, 2), "utf8");
+}
+
+function assertMockPayloadMatchesSchema(
+  schema: unknown,
+  payload: Record<string, unknown>,
+  endpoint: string,
+  contentId?: string,
+): void {
+  const fields = extractApiFields(schema);
+  if (fields.length === 0) {
+    return;
+  }
+
+  for (const field of fields) {
+    const fieldId = typeof field.fieldId === "string" ? field.fieldId : null;
+    if (!fieldId || !(fieldId in payload)) {
+      continue;
+    }
+
+    if (normalizeKind(field.kind) !== "select") {
+      continue;
+    }
+
+    const value = payload[fieldId];
+    if (!Array.isArray(value)) {
+      throw fromHttpStatus(400, "mock select payload must be an array", {
+        endpoint,
+        contentId,
+        field: fieldId,
+      });
+    }
+
+    if (!isFieldMultiple(field) && value.length > 1) {
+      throw fromHttpStatus(400, "mock single select payload must contain at most one value", {
+        endpoint,
+        contentId,
+        field: fieldId,
+      });
+    }
+  }
 }
 
 function logVerbose(verbose: boolean, message: string, error: unknown): void {

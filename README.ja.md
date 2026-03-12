@@ -144,6 +144,7 @@ microcms validate <endpoint> --file payload.json --json
 - managed-json の delete は明示 tombstone 方式です。record file を消しただけでは remote delete されません。
 - `content bulk --dry-run` は API 呼び出しなしで操作定義ファイルの構造のみ検証します。
 - スキーマに基づく payload 検証が必要な場合は `--validate-payload`（または `--strict-warnings`）を指定してください。
+- single select フィールドは CLI payload では `"value"` と `["value"]` の両方を受け付けます。managed-json は string で保存し、書き込み実行時に API 互換の配列 shape へ正規化します。
 
 ### ドキュメント / エージェント参照（APIキー・service domain不要）
 

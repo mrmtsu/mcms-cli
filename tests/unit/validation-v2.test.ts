@@ -52,6 +52,27 @@ describe("payload validation v2", () => {
     );
   });
 
+  it("accepts string and single-item array for single select fields", () => {
+    const schema = {
+      apiFields: [
+        {
+          fieldId: "intent",
+          kind: "select",
+          multipleSelect: false,
+          selectItems: [{ value: "comparison" }, { value: "guide" }],
+        },
+      ],
+    };
+
+    expect(validatePayload({ intent: "comparison" }, schema).valid).toBe(true);
+    expect(validatePayload({ intent: ["guide"] }, schema).valid).toBe(true);
+    expect(validatePayload({ intent: [] }, schema).valid).toBe(true);
+
+    const invalid = validatePayload({ intent: ["comparison", "guide"] }, schema);
+    expect(invalid.valid).toBe(false);
+    expect(invalid.errors.join("\n")).toContain("single-item array");
+  });
+
   it("avoids type errors for unknown field kinds", () => {
     const schema = {
       apiFields: [

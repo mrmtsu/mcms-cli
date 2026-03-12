@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { extractApiFields, normalizeKind } from "./api-field-utils.js";
+import { extractApiFields, isFieldMultiple, normalizeKind } from "./api-field-utils.js";
 import { CliError } from "./errors.js";
 import { EXIT_CODE } from "./exit-codes.js";
 import { assertObjectPayload, readJsonFile } from "./io.js";
@@ -354,7 +354,7 @@ function normalizeSelectValue(payload: JsonObject, field: ApiField, value: unkno
     return;
   }
 
-  const multiple = Boolean(field.multipleSelect || field.multiple || field.isMultiple);
+  const multiple = isFieldMultiple(field);
   if (multiple) {
     payload[fieldId] = Array.isArray(value) ? value : value == null ? [] : [value];
     return;

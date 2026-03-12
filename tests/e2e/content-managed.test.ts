@@ -207,6 +207,80 @@ describe("content managed-json workflow", () => {
     expect(forcedStore.endpoints.notes["1"]?.title).toBe("forced-update");
   });
 
+  it("normalizes single select writes before managed execute", () => {
+    const workDir = mkdtempSync(join(tmpdir(), "microcms-cli-managed-single-select-"));
+    const mockStorePath = join(workDir, "mock-store.json");
+    const outDir = join(workDir, "managed");
+
+    writeFileSync(
+      mockStorePath,
+      JSON.stringify(
+        {
+          nextId: 10,
+          endpoints: {
+            tech_articles: {
+              article_1: {
+                title: "Article 1",
+                intent: ["comparison"],
+                updatedAt: "2026-03-10T00:00:00.000Z",
+              },
+            },
+          },
+          schemas: {
+            tech_articles: {
+              endpoint: "tech_articles",
+              apiType: "list",
+              apiFields: [
+                { fieldId: "title", kind: "text", required: true },
+                {
+                  fieldId: "intent",
+                  kind: "select",
+                  multipleSelect: false,
+                  selectItems: ["comparison", "guide"],
+                },
+              ],
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const env = buildEnv(mockStorePath);
+    expect(
+      runCli(["content", "pull", "tech_articles", "--all", "--out", outDir, "--json"], env).code,
+    ).toBe(0);
+    expect(readJson(join(outDir, "tech_articles", "records", "article_1.json"))).toEqual({
+      title: "Article 1",
+      intent: "comparison",
+    });
+
+    writeJson(join(outDir, "tech_articles", "records", "article_1.json"), {
+      title: "Article 1",
+      intent: "guide",
+    });
+
+    const verify = runCli(["content", "verify", "tech_articles", "--dir", outDir, "--json"], env);
+    expect(verify.code).toBe(0);
+
+    const push = runCli(
+      ["content", "push", "tech_articles", "--dir", outDir, "--execute", "--json"],
+      env,
+    );
+    expect(push.code).toBe(0);
+
+    const store = readJson(mockStorePath) as {
+      endpoints: Record<string, Record<string, { intent?: unknown }>>;
+    };
+    expect(store.endpoints.tech_articles.article_1?.intent).toEqual(["guide"]);
+    expect(readJson(join(outDir, "tech_articles", "records", "article_1.json"))).toEqual({
+      title: "Article 1",
+      intent: "guide",
+    });
+  });
+
   it("reports sync-status categories for managed records", () => {
     const workDir = mkdtempSync(join(tmpdir(), "microcms-cli-managed-status-"));
     const mockStorePath = join(workDir, "mock-store.json");

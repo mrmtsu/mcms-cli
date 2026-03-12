@@ -31,6 +31,14 @@ export function normalizeKind(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+export function isFieldMultiple(field: {
+  multiple?: unknown;
+  isMultiple?: unknown;
+  multipleSelect?: unknown;
+}): boolean {
+  return Boolean(field.multiple) || Boolean(field.isMultiple) || Boolean(field.multipleSelect);
+}
+
 export function extractAllowedValues(field: {
   selectItems?: unknown;
   options?: unknown;

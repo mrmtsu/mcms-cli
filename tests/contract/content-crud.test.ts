@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -112,5 +112,63 @@ describe("content CRUD contract", () => {
         version: "0.x",
       },
     });
+  });
+
+  it("normalizes single select payloads before direct update execution", () => {
+    const workDir = mkdtempSync(join(tmpdir(), "microcms-cli-contract-select-"));
+    const updatePath = join(workDir, "update.json");
+    const mockStorePath = join(workDir, "mock-content-store.json");
+
+    writeFileSync(updatePath, JSON.stringify({ intent: "guide" }, null, 2), "utf8");
+    writeFileSync(
+      mockStorePath,
+      JSON.stringify(
+        {
+          nextId: 10,
+          endpoints: {
+            tech_articles: {
+              article_1: {
+                title: "Article 1",
+                intent: ["comparison"],
+              },
+            },
+          },
+          schemas: {
+            tech_articles: {
+              endpoint: "tech_articles",
+              apiType: "list",
+              apiFields: [
+                {
+                  fieldId: "intent",
+                  kind: "select",
+                  multipleSelect: false,
+                  selectItems: ["comparison", "guide"],
+                },
+              ],
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const env = {
+      MICROCMS_SERVICE_DOMAIN: "mock",
+      MICROCMS_API_KEY: "mock-key",
+      MICROCMS_CONTENT_MOCK_FILE: mockStorePath,
+    };
+
+    const updateResult = runCli(
+      ["content", "update", "tech_articles", "article_1", "--file", updatePath, "--json"],
+      env,
+    );
+    expect(updateResult.code).toBe(0);
+
+    const store = JSON.parse(readFileSync(mockStorePath, "utf8")) as {
+      endpoints: Record<string, Record<string, { intent?: unknown }>>;
+    };
+    expect(store.endpoints.tech_articles.article_1?.intent).toEqual(["guide"]);
   });
 });
