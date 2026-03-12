@@ -26,19 +26,19 @@ importers:
         version: 7.9.0
     devDependencies:
       '@types/node':
-        specifier: ^25.3.5
+        specifier: ^25.3.0
         version: 25.3.5
       oxfmt:
         specifier: ^0.36.0
         version: 0.36.0
       oxlint:
-        specifier: ^1.51.0
+        specifier: ^1.49.0
         version: 1.51.0
       tsx:
-        specifier: ^4.21.0
+        specifier: ^4.19.3
         version: 4.21.0
       typescript:
-        specifier: ^5.9.3
+        specifier: ^5.8.2
         version: 5.9.3
       vitest:
         specifier: ^4.0.18
