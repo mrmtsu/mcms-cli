@@ -1,6 +1,6 @@
 {
   "name": "@mrmtsu/mcms-cli",
-  "version": "0.6.0",
+  "version": "0.7.1",
   "description": "Unofficial microCMS CLI for Content API and Management API automation (AI/CI friendly)",
   "license": "MIT",
   "homepage": "https://github.com/mrmtsu/mcms-cli#readme",
@@ -41,6 +41,7 @@
     "lint": "oxlint --deny-warnings src scripts tests vitest.config.ts",
     "format": "oxfmt --write src scripts tests vitest.config.ts",
     "format:check": "oxfmt --check src scripts tests vitest.config.ts",
+    "prepack": "npm run build",
     "skill:check": "tsx scripts/generate-skill.ts --check",
     "skill:generate": "tsx scripts/generate-skill.ts",
     "test": "vitest run",

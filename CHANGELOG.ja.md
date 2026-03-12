@@ -7,11 +7,14 @@
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-03-12
+
 ### 追加
 - managed-json ベースのファイル運用向け first cut として、`content pull` / `content verify` / `content push` / `content sync-status` を追加した。
 
 ### 変更
 - list API 向けに managed-json の正規化/manifest 管理を追加し、README / README.ja に first cut の制約を反映した。
+- `npm pack` / `npm publish` のたびに最新の `dist` を含めるため、`prepack` で build を必ず実行するようにした。
 
 ### テスト
 - managed-json ワークフローと、そのコマンド仕様公開を対象とした unit/e2e/contract テストを追加した。
