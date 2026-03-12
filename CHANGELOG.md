@@ -7,10 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+<<<<<<< Updated upstream
 ### Changed
 - Single select fields now accept both `"value"` and `["value"]` in CLI payload validation, while preserving string storage in managed-json files.
 - Write execution for `content create/update/import/bulk/push --execute` now normalizes single select payloads to the array shape expected by the microCMS API when schema information is available.
 - Added README / README.ja / CLI specification notes documenting the single select normalization behavior across managed-json, validate, and execute flows.
+=======
+## [0.7.2] - 2026-03-13
+
+### Changed
+- Single select fields now accept both `"value"` and `["value"]` in CLI payload validation, while preserving string storage in managed-json files.
+- Write execution for `content create/update/import/bulk/push --execute` now normalizes single select payloads to the array shape expected by the microCMS API when schema information is available.
+- Added README / README.ja notes documenting the single select normalization behavior across managed-json, validate, and execute flows.
+>>>>>>> Stashed changes
 
 ### Tests
 - Added regression coverage for managed-json push execution and direct content updates involving single select fields.
