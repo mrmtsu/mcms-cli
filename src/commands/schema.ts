@@ -14,7 +14,7 @@ import { withCommandContext } from "./utils.js";
 type PullOptions = {
   out?: string;
   endpoints?: string;
-  format?: "microcms" | "json-schema";
+  format?: "microcms" | "json-schema" | "api-export";
   includeExtensions?: boolean;
 };
 
@@ -28,7 +28,9 @@ export function registerSchemaCommands(program: Command): void {
 
   schema
     .command("pull")
-    .description("Fetch API schema metadata and save to file")
+    .description(
+      "Fetch API schema metadata and save to file (canonical entrypoint for reusable API schema export)",
+    )
     .option("--out <path>", "output JSON file", "microcms-schema.json")
     .option("--endpoints <list>", "comma-separated endpoints to pull")
     .option(
@@ -40,10 +42,10 @@ export function registerSchemaCommands(program: Command): void {
     .action(
       withCommandContext(async (ctx, options: PullOptions) => {
         const format = options.format ?? "microcms";
-        if (format !== "microcms" && format !== "json-schema") {
+        if (format !== "microcms" && format !== "json-schema" && format !== "api-export") {
           throw new CliError({
             code: "INVALID_INPUT",
-            message: `Unknown format: "${format}". Use "microcms" or "json-schema".`,
+            message: `Unknown format: "${format}". Use "microcms", "json-schema", or "api-export".`,
             exitCode: EXIT_CODE.INVALID_INPUT,
           });
         }
@@ -73,6 +75,17 @@ export function registerSchemaCommands(program: Command): void {
                 );
 
           await writeFile(outPath, JSON.stringify(output, null, 2), "utf8");
+        } else if (format === "api-export") {
+          if (remote.apis.length !== 1) {
+            throw new CliError({
+              code: "INVALID_INPUT",
+              message:
+                'Format "api-export" requires exactly one endpoint. Specify a single endpoint via --endpoints or use `microcms api schema export <endpoint>`.',
+              exitCode: EXIT_CODE.INVALID_INPUT,
+            });
+          }
+
+          await writeFile(outPath, JSON.stringify(remote.apis[0].api, null, 2), "utf8");
         } else {
           const bundle = buildSchemaBundle({
             serviceDomain: ctx.serviceDomain,

@@ -9,7 +9,11 @@ Thanks for contributing to `mcms-cli`.
    ```bash
    npm install
    ```
-3. Run the same checks as CI:
+3. Install the local git hook harness (recommended, once per clone):
+   ```bash
+   npm run hooks:install
+   ```
+4. Run the same checks as CI:
    ```bash
    npm run check:ci
    ```
@@ -19,7 +23,8 @@ Thanks for contributing to `mcms-cli`.
 1. Create a branch from `main`.
 2. Keep commits focused (one feature/fix per PR when possible).
 3. Include tests for behavior changes.
-4. Open a PR with:
+4. Do not push or open a PR until `npm run check:ci` passes locally.
+5. Open a PR with:
    - motivation
    - behavior before/after
    - command examples (`--json` output if relevant)

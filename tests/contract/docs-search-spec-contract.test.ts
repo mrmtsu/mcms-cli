@@ -24,6 +24,7 @@ describe("docs/search/spec contract", () => {
     expect(searchBody.ok).toBe(true);
     expect(searchBody.meta.version).toBe("0.x");
     expect(searchBody.data).toHaveProperty("hits");
+    expect(searchBody.data).toHaveProperty("recommendedCommands");
 
     const specResult = runCli(["spec", "--json"]);
     expect(specResult.code).toBe(0);
@@ -31,6 +32,7 @@ describe("docs/search/spec contract", () => {
     expect(specBody.ok).toBe(true);
     expect(specBody.meta.version).toBe("0.x");
     expect(specBody.data).toHaveProperty("commands");
+    expect(specBody.data).toHaveProperty("discoveryHints");
     expect(
       (specBody.data.commands as Array<{ path?: string }>).some(
         (command) => command.path === "member get",
@@ -113,6 +115,16 @@ describe("docs/search/spec contract", () => {
     ).toBe(true);
     expect(
       (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "api schema export",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "api schema inspect",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
         (command) => command.path === "task list",
       ),
     ).toBe(true);
@@ -137,5 +149,10 @@ describe("docs/search/spec contract", () => {
       specBody.data.commands as Array<{ path?: string; options?: string[] }>
     ).find((command) => command.path === "types generate");
     expect(typesGenerate?.options).toContain("--endpoints <list>");
+
+    const searchCommand = (
+      specBody.data.commands as Array<{ path?: string; relatedCommands?: string[] }>
+    ).find((command) => command.path === "search");
+    expect(searchCommand?.relatedCommands).toContain("docs get");
   });
 });

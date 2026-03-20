@@ -95,6 +95,8 @@ Resolution order for service domain:
 ```bash
 microcms api list --json
 microcms api info <endpoint> --json
+microcms api schema inspect <endpoint> --json
+microcms api schema export <endpoint> --out <endpoint>-api-schema.json --json
 microcms member get <memberId> --json
 
 microcms content list <endpoint> --json
@@ -149,23 +151,29 @@ microcms validate <endpoint> --file payload.json --json
 ### Docs and Agent references (no API key / service domain required)
 
 ```bash
+microcms search "api schema" --scope all --json
+microcms docs get --category management-api --file "APIスキーマ取得API（フィールド定義やカスタムフィールド）.md" --json
 microcms docs list --source auto --json
 microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
 microcms search "content list" --scope all --json
 microcms spec --json
 microcms task list --json
+microcms task suggest "schema export" --json
+microcms task guide api-schema-export --json
 microcms task suggest "delete content" --json
 microcms task guide content-delete --json
 ```
 
-- `docs get`: fetch official microCMS documentation markdown content.
-- `search`: search command/spec references and docs metadata (titles/filenames), not full doc body.
+- Use `docs`, `search`, `task`, and `spec` as the official CLI surface for agent guidance. External MCP usage should not be necessary for normal discovery.
+- `docs get`: fetch official microCMS documentation markdown content through the CLI surface.
+- `search`: search command/spec references and docs metadata (titles/filenames), and return recommended follow-up commands.
 - `task suggest` / `task guide`: task-oriented runbook helpers for agent/CI workflows.
 
 ### Schema / Type helpers
 
 ```bash
 microcms schema pull --out microcms-schema.json --json
+microcms schema pull --format api-export --endpoints blogs --out blogs-api-schema.json --json
 microcms schema pull --format json-schema --out schema.json --json
 microcms schema pull --format json-schema --include-extensions --out schema.json --json
 microcms schema pull --format json-schema --endpoints blogs --out blogs-schema.json --json
@@ -175,6 +183,8 @@ microcms types generate --schema microcms-schema.json --out microcms-types.d.ts 
 microcms types sync --out microcms-types.d.ts --json
 microcms types sync --out microcms-types.d.ts --schema-out microcms-schema.json --json
 ```
+
+`schema pull` is the canonical schema export entrypoint. Use `api schema export` as the discoverability alias when you want a single endpoint in API import-compatible shape.
 
 `--format json-schema` uses [`@mrmtsu/microcms-schema-adapter`](https://github.com/mrmtsu/microcms-schema-adapter) to convert microCMS schemas to JSON Schema (draft-07).
 
@@ -187,6 +197,8 @@ It provides strong coverage for complex schemas, including relation resolution, 
 microcms config doctor --json
 microcms completion install zsh --json
 microcms completion uninstall --json
+npm run hooks:install
+npm run preflight:pr
 ```
 
 ### Auth profile management
@@ -288,6 +300,7 @@ npm run build
 - `MICROCMS_*_BASE_URL` overrides only allow localhost or microcms domains.
 - Documentation commands use bundled `microcms-document-mcp-server` by default (no extra user setup required).
 - `docs`, `search`, and `spec` do not require `MICROCMS_API_KEY` / `MICROCMS_SERVICE_DOMAIN`.
+- Treat `docs`, `search`, `task`, and `spec` as the only discovery surface you need from the CLI. They intentionally hide the underlying bundled docs runtime.
 - `search` is for command/spec references and docs metadata (titles/filenames). Use `docs get` to read official documentation markdown content.
 - You can override the MCP executable path with `MICROCMS_DOC_MCP_COMMAND` when needed.
 

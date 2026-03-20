@@ -22,11 +22,15 @@ Always run microCMS write operations with `--json` and `--dry-run` first.
 ## Quick start
 
 ```bash
+microcms search "api schema" --scope all --json                          # discover commands/docs first
+microcms docs get --category management-api --file "APIスキーマ取得API（フィールド定義やカスタムフィールド）.md" --json
 microcms auth status --json
 microcms config doctor --json
 microcms schema pull --out microcms-schema.json --json                    # microCMS proprietary format
+microcms schema pull --format api-export --endpoints blogs --out blogs-api-schema.json --json
 microcms schema pull --format json-schema --out schema.json --json        # JSON Schema (draft-07)
 microcms schema pull --format json-schema --include-extensions --out schema.json --json
+microcms api schema export blogs --out blogs-api-schema.json --json       # discoverable alias for single-endpoint export
 microcms validate blogs --file payload.json --json
 microcms content create blogs --file payload.json --dry-run --json
 microcms content create blogs --file payload.json --json
@@ -77,9 +81,70 @@ run_mcms() {
 - Bulk/import contracts and recovery: [references/bulk-and-import.md](references/bulk-and-import.md)
 - Docs/search/spec and agent-browser loop: [references/docs-and-search.md](references/docs-and-search.md)
 
+Always prefer the CLI docs/search/task/spec surface before reaching for any external tool.
+
 ## Built-in safe task workflows
 
 These sections are derived from the built-in `microcms task guide` data.
+
+### `docs-read-spec` - Read Official Docs via CLI
+
+Use CLI-first docs/search commands to inspect official microCMS documentation without leaving mcms-cli.
+
+Risk: `low`
+Requires confirmation: `no`
+
+1. `microcms search "<query>" --scope all --json`
+   Risk: `low`, confirmation: `no`
+2. `microcms docs get --category <category> --file "<filename>" --json`
+   Risk: `low`, confirmation: `no`
+   Note: CLI remains the official entrypoint even when the underlying source resolves to the bundled docs runtime.
+3. `microcms spec --json`
+   Risk: `low`, confirmation: `no`
+
+### `api-schema-inspect` - Inspect API Schema Safely
+
+Read official docs and inspect a single endpoint schema without exporting files yet.
+
+Risk: `low`
+Requires confirmation: `no`
+
+1. `microcms search "api schema" --scope all --json`
+   Risk: `low`, confirmation: `no`
+2. `microcms docs get --category management-api --file "APIスキーマ取得API（フィールド定義やカスタムフィールド）.md" --json`
+   Risk: `low`, confirmation: `no`
+3. `microcms api schema inspect <endpoint> --json`
+   Risk: `low`, confirmation: `no`
+
+### `api-schema-export` - Export Reusable API Schema
+
+Export a single endpoint schema in API import-compatible shape while keeping schema pull canonical.
+
+Risk: `low`
+Requires confirmation: `no`
+
+1. `microcms docs get --category manual --file " APIスキーマのエクスポート／インポート.md" --json`
+   Risk: `low`, confirmation: `no`
+2. `microcms api schema inspect <endpoint> --json`
+   Risk: `low`, confirmation: `no`
+3. `microcms api schema export <endpoint> --out <endpoint>-api-schema.json --json`
+   Risk: `low`, confirmation: `no`
+   Note: Canonical equivalent: `microcms schema pull --format api-export --endpoints <endpoint> --out <endpoint>-api-schema.json --json`.
+
+### `api-schema-import-compat` - Prepare API Import-Compatible Schema JSON
+
+Produce the JSON shape accepted by the UI import flow, while documenting import limitations.
+
+Risk: `low`
+Requires confirmation: `no`
+
+1. `microcms docs get --category manual --file " APIスキーマのエクスポート／インポート.md" --json`
+   Risk: `low`, confirmation: `no`
+   Note: Relation targets are not fully restored by import and still require follow-up in the UI.
+2. `microcms schema pull --format api-export --endpoints <endpoint> --out <endpoint>-api-schema.json --json`
+   Risk: `low`, confirmation: `no`
+3. `microcms api schema inspect <endpoint> --json`
+   Risk: `low`, confirmation: `no`
 
 ### `content-create` - Create Content Safely
 

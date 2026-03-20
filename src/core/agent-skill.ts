@@ -14,11 +14,15 @@ export const MCMS_CLI_SKILL_SOURCES = [
 ] as const;
 
 const QUICK_START_COMMANDS = [
+  'microcms search "api schema" --scope all --json                          # discover commands/docs first',
+  'microcms docs get --category management-api --file "APIスキーマ取得API（フィールド定義やカスタムフィールド）.md" --json',
   "microcms auth status --json",
   "microcms config doctor --json",
   "microcms schema pull --out microcms-schema.json --json                    # microCMS proprietary format",
+  "microcms schema pull --format api-export --endpoints blogs --out blogs-api-schema.json --json",
   "microcms schema pull --format json-schema --out schema.json --json        # JSON Schema (draft-07)",
   "microcms schema pull --format json-schema --include-extensions --out schema.json --json",
+  "microcms api schema export blogs --out blogs-api-schema.json --json       # discoverable alias for single-endpoint export",
   "microcms validate blogs --file payload.json --json",
   "microcms content create blogs --file payload.json --dry-run --json",
   "microcms content create blogs --file payload.json --json",
@@ -43,6 +47,10 @@ const EXIT_CODES = [
 ] as const;
 
 const WORKFLOW_TASK_IDS = [
+  "docs-read-spec",
+  "api-schema-inspect",
+  "api-schema-export",
+  "api-schema-import-compat",
   "content-create",
   "content-update",
   "content-delete",
@@ -124,6 +132,10 @@ export function renderMcmsCliSkill(): string {
   );
   lines.push(
     "- Docs/search/spec and agent-browser loop: [references/docs-and-search.md](references/docs-and-search.md)",
+  );
+  lines.push("");
+  lines.push(
+    "Always prefer the CLI docs/search/task/spec surface before reaching for any external tool.",
   );
   lines.push("");
   lines.push("## Built-in safe task workflows");

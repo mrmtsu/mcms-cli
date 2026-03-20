@@ -52,6 +52,96 @@ export type TaskGuide = {
 
 const TASK_TEMPLATES: TaskTemplate[] = [
   {
+    id: "docs-read-spec",
+    title: "Read Official Docs via CLI",
+    summary:
+      "Use CLI-first docs/search commands to inspect official microCMS documentation without leaving mcms-cli.",
+    aliases: ["docs", "spec-read", "read-docs", "search-docs"],
+    steps: [
+      {
+        title: "Search command/spec references and doc titles",
+        command: 'microcms search "<query>" --scope all --json',
+      },
+      {
+        title: "Read the official document markdown through the CLI surface",
+        command: 'microcms docs get --category <category> --file "<filename>" --json',
+        note: "CLI remains the official entrypoint even when the underlying source resolves to the bundled docs runtime.",
+      },
+      {
+        title: "Inspect the machine-readable CLI spec when command selection matters",
+        command: "microcms spec --json",
+      },
+    ],
+  },
+  {
+    id: "api-schema-inspect",
+    title: "Inspect API Schema Safely",
+    summary: "Read official docs and inspect a single endpoint schema without exporting files yet.",
+    aliases: ["schema-inspect", "inspect-schema", "api-info"],
+    steps: [
+      {
+        title: "Search schema-related guidance first",
+        command: 'microcms search "api schema" --scope all --json',
+      },
+      {
+        title: "Read the Management API schema reference through the CLI surface",
+        command:
+          'microcms docs get --category management-api --file "APIスキーマ取得API（フィールド定義やカスタムフィールド）.md" --json',
+      },
+      {
+        title: "Inspect one endpoint schema",
+        command: "microcms api schema inspect <endpoint> --json",
+      },
+    ],
+  },
+  {
+    id: "api-schema-export",
+    title: "Export Reusable API Schema",
+    summary:
+      "Export a single endpoint schema in API import-compatible shape while keeping schema pull canonical.",
+    aliases: ["schema-export", "export-schema", "api-export"],
+    steps: [
+      {
+        title: "Read the API schema export/import guide through the CLI surface",
+        command:
+          'microcms docs get --category manual --file " APIスキーマのエクスポート／インポート.md" --json',
+      },
+      {
+        title: "Inspect the endpoint schema before saving it",
+        command: "microcms api schema inspect <endpoint> --json",
+      },
+      {
+        title: "Export a single endpoint schema via the discoverability alias",
+        command: "microcms api schema export <endpoint> --out <endpoint>-api-schema.json --json",
+        note: "Canonical equivalent: `microcms schema pull --format api-export --endpoints <endpoint> --out <endpoint>-api-schema.json --json`.",
+      },
+    ],
+  },
+  {
+    id: "api-schema-import-compat",
+    title: "Prepare API Import-Compatible Schema JSON",
+    summary:
+      "Produce the JSON shape accepted by the UI import flow, while documenting import limitations.",
+    aliases: ["import-compat", "schema-import", "ui-import"],
+    steps: [
+      {
+        title: "Read the UI import guide and limitations",
+        command:
+          'microcms docs get --category manual --file " APIスキーマのエクスポート／インポート.md" --json',
+        note: "Relation targets are not fully restored by import and still require follow-up in the UI.",
+      },
+      {
+        title: "Export exactly one endpoint in import-compatible shape",
+        command:
+          "microcms schema pull --format api-export --endpoints <endpoint> --out <endpoint>-api-schema.json --json",
+      },
+      {
+        title: "Inspect the exported shape if you need a quick confirmation",
+        command: "microcms api schema inspect <endpoint> --json",
+      },
+    ],
+  },
+  {
     id: "content-create",
     title: "Create Content Safely",
     summary: "Validate payload and create a new content item with dry-run first.",

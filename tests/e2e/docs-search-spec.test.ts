@@ -126,6 +126,16 @@ describe("docs/search/spec commands", () => {
     expect(body.data.scope).toBe("all");
     expect(body.data.sourceResolved).toBe("mcp");
     expect(body.data.hits.length).toBeGreaterThan(0);
+    expect(Array.isArray(body.data.recommendedCommands)).toBe(true);
+    expect(
+      body.data.recommendedCommands.some((command: string) => command.startsWith("microcms")),
+    ).toBe(true);
+    expect(
+      body.data.hits.some(
+        (hit: { kind: string; recommendedCommands?: string[] }) =>
+          Array.isArray(hit.recommendedCommands) && hit.recommendedCommands.length > 0,
+      ),
+    ).toBe(true);
   });
 
   it("returns machine-readable spec", () => {
@@ -133,8 +143,12 @@ describe("docs/search/spec commands", () => {
     expect(result.code).toBe(0);
     const body = JSON.parse(result.stdout);
     expect(body.data.name).toBe("microcms");
+    expect(Array.isArray(body.data.discoveryHints)).toBe(true);
     expect(
       body.data.commands.some((command: { path: string }) => command.path === "docs get"),
+    ).toBe(true);
+    expect(
+      body.data.commands.some((command: { path: string }) => command.path === "api schema export"),
     ).toBe(true);
   });
 

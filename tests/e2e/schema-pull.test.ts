@@ -168,4 +168,68 @@ describe("schema pull", () => {
     const body = JSON.parse(result.stdout);
     expect(body.data.format).toBe("microcms");
   });
+
+  it("outputs api import-compatible schema with --format api-export", () => {
+    const workDir = mkdtempSync(join(tmpdir(), "microcms-cli-schema-pull-api-export-"));
+    const { env } = buildMockStore(workDir);
+    const outPath = join(workDir, "blogs-api-schema.json");
+
+    const result = runCli(
+      [
+        "schema",
+        "pull",
+        "--format",
+        "api-export",
+        "--endpoints",
+        "blogs",
+        "--out",
+        outPath,
+        "--json",
+      ],
+      env,
+    );
+    expect(result.code).toBe(0);
+
+    const output = JSON.parse(readFileSync(outPath, "utf8"));
+    expect(output.endpoint).toBe("blogs");
+    expect(output.apiFields[0].fieldId).toBe("title");
+
+    const body = JSON.parse(result.stdout);
+    expect(body.data.format).toBe("api-export");
+    expect(body.data.endpointCount).toBe(1);
+  });
+
+  it("rejects api-export when multiple endpoints would be written", () => {
+    const workDir = mkdtempSync(join(tmpdir(), "microcms-cli-schema-pull-api-export-many-"));
+    const { env } = buildMockStore(workDir);
+    const outPath = join(workDir, "schema.json");
+
+    const result = runCli(
+      ["schema", "pull", "--format", "api-export", "--out", outPath, "--json"],
+      env,
+    );
+    expect(result.code).toBe(2);
+
+    const body = JSON.parse(result.stderr);
+    expect(body.ok).toBe(false);
+    expect(body.error.code).toBe("INVALID_INPUT");
+    expect(body.error.message).toContain("exactly one endpoint");
+  });
+
+  it("exports schema through the api schema export alias", () => {
+    const workDir = mkdtempSync(join(tmpdir(), "microcms-cli-api-schema-export-"));
+    const { env } = buildMockStore(workDir);
+    const outPath = join(workDir, "blogs-api-schema.json");
+
+    const result = runCli(["api", "schema", "export", "blogs", "--out", outPath, "--json"], env);
+    expect(result.code).toBe(0);
+
+    const output = JSON.parse(readFileSync(outPath, "utf8"));
+    expect(output.endpoint).toBe("blogs");
+    expect(output.apiFields[1].fieldId).toBe("body");
+
+    const body = JSON.parse(result.stdout);
+    expect(body.data.format).toBe("api-export");
+    expect(body.data.canonicalCommand).toContain("schema pull --format api-export");
+  });
 });

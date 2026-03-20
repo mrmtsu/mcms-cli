@@ -10,6 +10,8 @@ describe("cli spec", () => {
     expect(spec.exitCodes.INVALID_INPUT).toBe(2);
     expect(spec.commands.some((command) => command.path === "docs list")).toBe(true);
     expect(spec.commands.some((command) => command.path === "docs get")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "api schema inspect")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "api schema export")).toBe(true);
     expect(spec.commands.some((command) => command.path === "member get")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content meta list")).toBe(true);
     expect(spec.commands.some((command) => command.path === "content meta get")).toBe(true);
@@ -25,5 +27,10 @@ describe("cli spec", () => {
     expect(spec.commands.some((command) => command.path === "task suggest")).toBe(true);
     expect(spec.commands.some((command) => command.path === "task guide")).toBe(true);
     expect(spec.commands.some((command) => command.path === "spec")).toBe(true);
+    expect(Array.isArray(spec.discoveryHints)).toBe(true);
+    expect(spec.discoveryHints.length).toBeGreaterThan(0);
+
+    const schemaPull = spec.commands.find((command) => command.path === "schema pull");
+    expect(schemaPull?.relatedCommands).toContain("api schema export");
   });
 });

@@ -1,14 +1,19 @@
 # Docs, Search, and UI Verification
 
 Use docs/search/spec commands to inspect capability before executing risky writes.
+Treat the CLI as the official discovery surface. Even when docs resolve via the bundled runtime, agents should stay on `microcms docs/search/task/spec` instead of calling the runtime directly.
 
 ## Documentation and command discovery (no API key required)
 
 ```bash
+microcms search "api schema" --scope all --json
+microcms docs get --category management-api --file "APIスキーマ取得API（フィールド定義やカスタムフィールド）.md" --json
 microcms docs list --source auto --json
 microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
 microcms search "content list" --scope all --json
 microcms spec --json
+microcms task suggest "schema export" --json
+microcms task guide api-schema-export --json
 ```
 
 ## Recommended preflight command set
@@ -17,6 +22,7 @@ microcms spec --json
 microcms auth status --json
 microcms config doctor --json
 microcms schema pull --out microcms-schema.json --json
+microcms api schema export <endpoint> --out <endpoint>-api-schema.json --json
 microcms validate <endpoint> --file payload.json --json
 ```
 
