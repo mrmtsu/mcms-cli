@@ -62,6 +62,7 @@ export function registerSearchCommand(program: Command): void {
         }
 
         const ranked = rankSearchHits(query, hits, limit);
+        const recommendedCommands = collectRecommendedCommands(ranked);
 
         printSuccess(ctx, {
           query,
@@ -69,6 +70,7 @@ export function registerSearchCommand(program: Command): void {
           sourceResolved,
           warnings,
           hits: ranked,
+          recommendedCommands,
         });
       }),
     );
@@ -101,10 +103,15 @@ function buildSpecHits(): SearchHit[] {
     snippet: `${command.description}. options: ${command.options.join(", ") || "none"}`,
     score: 0,
     source: "local" as const,
+    recommendedCommands: [
+      `microcms ${command.path}`,
+      ...(command.relatedCommands ?? []).map((related) => `microcms ${related}`),
+    ].slice(0, 4),
   }));
 }
 
 function toDocHit(category: string, filename: string, source: "local" | "mcp"): SearchHit {
+  const readCommand = `microcms docs get --category ${category} --file "${filename}" --json`;
   const title = filename.replace(/\.md$/i, "");
   return {
     kind: "doc",
@@ -115,5 +122,22 @@ function toDocHit(category: string, filename: string, source: "local" | "mcp"): 
     source,
     category,
     filename,
+    recommendedCommands: [
+      readCommand,
+      `microcms search "${title}" --scope docs --category ${category} --json`,
+    ],
   };
+}
+
+function collectRecommendedCommands(hits: SearchHit[]): string[] {
+  const commands: string[] = [];
+  for (const hit of hits) {
+    for (const command of hit.recommendedCommands ?? []) {
+      if (!commands.includes(command)) {
+        commands.push(command);
+      }
+    }
+  }
+
+  return commands.slice(0, 8);
 }

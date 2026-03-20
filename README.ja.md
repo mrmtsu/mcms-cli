@@ -95,6 +95,8 @@ service domain 解決順:
 ```bash
 microcms api list --json
 microcms api info <endpoint> --json
+microcms api schema inspect <endpoint> --json
+microcms api schema export <endpoint> --out <endpoint>-api-schema.json --json
 microcms member get <memberId> --json
 
 microcms content list <endpoint> --json
@@ -149,23 +151,29 @@ microcms validate <endpoint> --file payload.json --json
 ### ドキュメント / エージェント参照（APIキー・service domain不要）
 
 ```bash
+microcms search "api schema" --scope all --json
+microcms docs get --category management-api --file "APIスキーマ取得API（フィールド定義やカスタムフィールド）.md" --json
 microcms docs list --source auto --json
 microcms docs get --category content-api --file "コンテンツ一覧取得API.md" --json
 microcms search "content list" --scope all --json
 microcms spec --json
 microcms task list --json
+microcms task suggest "schema export" --json
+microcms task guide api-schema-export --json
 microcms task suggest "delete content" --json
 microcms task guide content-delete --json
 ```
 
-- `docs get`: microCMS公式ドキュメント本文（Markdown）を取得します。
-- `search`: コマンド仕様とドキュメントのメタデータ（タイトル/ファイル名）を検索します。本文は返しません。
+- 仕様確認やエージェント導線は、まず `docs` / `search` / `task` / `spec` を使って CLI 上で完結させてください。通常の discovery で外部 MCP を直接使う必要はありません。
+- `docs get`: CLI 経由で microCMS 公式ドキュメント本文（Markdown）を取得します。
+- `search`: コマンド仕様とドキュメントのメタデータ（タイトル/ファイル名）を検索し、次に打つべき推奨コマンドも返します。本文は返しません。
 - `task suggest` / `task guide`: エージェント/CI向けにタスク単位の実行手順を返します。
 
 ### Schema / Types 補助
 
 ```bash
 microcms schema pull --out microcms-schema.json --json
+microcms schema pull --format api-export --endpoints blogs --out blogs-api-schema.json --json
 microcms schema pull --format json-schema --out schema.json --json
 microcms schema pull --format json-schema --include-extensions --out schema.json --json
 microcms schema pull --format json-schema --endpoints blogs --out blogs-schema.json --json
@@ -175,6 +183,8 @@ microcms types generate --schema microcms-schema.json --out microcms-types.d.ts 
 microcms types sync --out microcms-types.d.ts --json
 microcms types sync --out microcms-types.d.ts --schema-out microcms-schema.json --json
 ```
+
+`schema pull` が canonical なスキーマ出力コマンドです。単一 endpoint を API インポート互換 shape で保存したいときは discoverability alias の `api schema export` を使えます。
 
 `--format json-schema` は [`@mrmtsu/microcms-schema-adapter`](https://github.com/mrmtsu/microcms-schema-adapter) を使用して microCMS スキーマを JSON Schema (draft-07) に変換します。
 
@@ -187,6 +197,8 @@ microcms types sync --out microcms-types.d.ts --schema-out microcms-schema.json 
 microcms config doctor --json
 microcms completion install zsh --json
 microcms completion uninstall --json
+npm run hooks:install
+npm run preflight:pr
 ```
 
 ### 認証プロファイル管理
@@ -288,6 +300,7 @@ npm run build
 - `MICROCMS_*_BASE_URL` の override 先は localhost または microcms ドメインのみ許可します。
 - ドキュメント系コマンドは、同梱された `microcms-document-mcp-server` を既定で利用します（追加セットアップ不要）。
 - `docs` / `search` / `spec` は `MICROCMS_API_KEY` や `MICROCMS_SERVICE_DOMAIN` なしで実行できます。
+- `docs` / `search` / `task` / `spec` は、CLI から見える唯一の discovery surface として使う想定です。内部の docs runtime を意識する必要はありません。
 - `search` はコマンド仕様とドキュメントのメタデータ（タイトル/ファイル名）向けです。公式ドキュメント本文（Markdown）は `docs get` を使って取得してください。
 - 必要に応じて `MICROCMS_DOC_MCP_COMMAND` で実行コマンドを上書きできます。
 

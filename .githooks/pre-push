@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+if [ "${MCMS_CLI_SKIP_PRE_PUSH:-}" = "1" ]; then
+  echo "[mcms-cli] Skipping pre-push checks because MCMS_CLI_SKIP_PRE_PUSH=1"
+  exit 0
+fi
+
+REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+
+echo "[mcms-cli] Running pre-push checks with npm run check:ci"
+cd "$REPO_ROOT"
+npm run check:ci

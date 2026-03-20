@@ -7,6 +7,7 @@ export type SearchHit = {
   source: "local" | "mcp";
   category?: string;
   filename?: string;
+  recommendedCommands?: string[];
 };
 
 export function rankSearchHits(query: string, hits: SearchHit[], limit: number): SearchHit[] {

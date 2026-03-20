@@ -12,6 +12,13 @@ export type CommandSpec = {
   args: string[];
   options: string[];
   readOnly: boolean;
+  relatedCommands?: string[];
+};
+
+export type DiscoveryHintSpec = {
+  intent: string;
+  commands: string[];
+  note?: string;
 };
 
 export type CliSpec = {
@@ -21,6 +28,7 @@ export type CliSpec = {
   globalOptions: GlobalOptionSpec[];
   exitCodes: Record<string, number>;
   commands: CommandSpec[];
+  discoveryHints: DiscoveryHintSpec[];
 };
 
 type PackageJson = {
@@ -45,6 +53,7 @@ export function getCliSpec(): CliSpec {
       CONFLICT: EXIT_CODE.CONFLICT,
     },
     commands: COMMANDS,
+    discoveryHints: DISCOVERY_HINTS,
   };
 }
 
@@ -86,6 +95,35 @@ const GLOBAL_OPTIONS: GlobalOptionSpec[] = [
   },
   { name: "--verbose", description: "verbose error output" },
   { name: "--no-color", description: "disable colorized output" },
+];
+
+const DISCOVERY_HINTS: DiscoveryHintSpec[] = [
+  {
+    intent: "Read official docs through the CLI entrypoint",
+    commands: [
+      'microcms search "api schema" --scope all --json',
+      'microcms docs get --category management-api --file "APIスキーマ取得API（フィールド定義やカスタムフィールド）.md" --json',
+      "microcms spec --json",
+    ],
+    note: "Prefer docs/search/spec before leaving the CLI surface.",
+  },
+  {
+    intent: "Inspect or export one endpoint schema",
+    commands: [
+      "microcms api schema inspect <endpoint> --json",
+      "microcms api schema export <endpoint> --out <endpoint>-api-schema.json --json",
+      "microcms schema pull --format api-export --endpoints <endpoint> --out <endpoint>-api-schema.json --json",
+    ],
+    note: "`schema pull` remains canonical; `api schema export` is the discoverability alias.",
+  },
+  {
+    intent: "Validate then write content safely",
+    commands: [
+      "microcms schema pull --out microcms-schema.json --json",
+      "microcms validate <endpoint> --file <payload.json> --json",
+      "microcms content create <endpoint> --file <payload.json> --dry-run --json",
+    ],
+  },
 ];
 
 const COMMANDS: CommandSpec[] = [
@@ -137,13 +175,37 @@ const COMMANDS: CommandSpec[] = [
     options: [],
     readOnly: false,
   },
-  { path: "api list", description: "list APIs", args: [], options: [], readOnly: true },
+  {
+    path: "api list",
+    description: "list APIs",
+    args: [],
+    options: [],
+    readOnly: true,
+    relatedCommands: ["api info", "api schema export", "schema pull"],
+  },
   {
     path: "api info",
-    description: "show API details",
+    description: "show API details for one-off inspection",
     args: ["<endpoint>"],
     options: [],
     readOnly: true,
+    relatedCommands: ["api schema inspect", "api schema export", "schema pull"],
+  },
+  {
+    path: "api schema inspect",
+    description: "alias of api info for schema discovery",
+    args: ["<endpoint>"],
+    options: [],
+    readOnly: true,
+    relatedCommands: ["api info", "api schema export", "schema pull"],
+  },
+  {
+    path: "api schema export",
+    description: "export a single endpoint schema in API import-compatible shape",
+    args: ["<endpoint>"],
+    options: ["--out <path>"],
+    readOnly: true,
+    relatedCommands: ["schema pull", "api schema inspect", "docs get"],
   },
   {
     path: "member get",
@@ -355,10 +417,11 @@ const COMMANDS: CommandSpec[] = [
   },
   {
     path: "schema pull",
-    description: "fetch API schema metadata and save to file",
+    description: "fetch API schema metadata and save to file (canonical schema export entrypoint)",
     args: [],
     options: ["--out <path>", "--endpoints <list>", "--format <format>", "--include-extensions"],
     readOnly: true,
+    relatedCommands: ["api schema export", "api schema inspect", "schema diff"],
   },
   {
     path: "schema diff",
@@ -401,6 +464,7 @@ const COMMANDS: CommandSpec[] = [
     args: [],
     options: ["--category <name>", "--file <filename>", "--max-chars <n>", "--source <source>"],
     readOnly: true,
+    relatedCommands: ["search", "spec", "task guide"],
   },
   {
     path: "search",
@@ -409,6 +473,7 @@ const COMMANDS: CommandSpec[] = [
     args: ["<query>"],
     options: ["--source <source>", "--scope <scope>", "--category <name>", "--limit <n>"],
     readOnly: true,
+    relatedCommands: ["docs get", "spec", "task suggest"],
   },
   {
     path: "task list",
@@ -416,6 +481,7 @@ const COMMANDS: CommandSpec[] = [
     args: [],
     options: [],
     readOnly: true,
+    relatedCommands: ["task suggest", "task guide", "search"],
   },
   {
     path: "task suggest",
@@ -423,6 +489,7 @@ const COMMANDS: CommandSpec[] = [
     args: ["[query]"],
     options: ["--limit <n>"],
     readOnly: true,
+    relatedCommands: ["task guide", "search", "spec"],
   },
   {
     path: "task guide",
@@ -430,6 +497,7 @@ const COMMANDS: CommandSpec[] = [
     args: ["<taskId>"],
     options: [],
     readOnly: true,
+    relatedCommands: ["task suggest", "search", "docs get"],
   },
   {
     path: "spec",
@@ -437,5 +505,6 @@ const COMMANDS: CommandSpec[] = [
     args: [],
     options: [],
     readOnly: true,
+    relatedCommands: ["search", "task suggest", "docs get"],
   },
 ];

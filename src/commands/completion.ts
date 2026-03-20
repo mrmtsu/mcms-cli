@@ -272,8 +272,14 @@ _microcms_complete() {
     api)
       if [[ "$subcmd" == "info" && \${COMP_CWORD} -eq 3 ]]; then
         COMPREPLY=( $(compgen -W "$( _microcms_endpoint_candidates )" -- "$cur") )
+      elif [[ "$subcmd" == "schema" && "$COMP_WORDS[3]" == "inspect" && \${COMP_CWORD} -eq 4 ]]; then
+        COMPREPLY=( $(compgen -W "$( _microcms_endpoint_candidates )" -- "$cur") )
+      elif [[ "$subcmd" == "schema" && "$COMP_WORDS[3]" == "export" && \${COMP_CWORD} -eq 4 ]]; then
+        COMPREPLY=( $(compgen -W "$( _microcms_endpoint_candidates )" -- "$cur") )
+      elif [[ "$subcmd" == "schema" ]]; then
+        COMPREPLY=( $(compgen -W "inspect export" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "list info" -- "$cur") )
+        COMPREPLY=( $(compgen -W "list info schema" -- "$cur") )
       fi
       ;;
     content)
@@ -363,6 +369,16 @@ _microcms() {
         return
       fi
 
+      if [[ "$subcmd" == "api" && "$action" == "schema" && "$words[4]" == "inspect" && CURRENT -eq 5 ]]; then
+        _microcms_endpoints
+        return
+      fi
+
+      if [[ "$subcmd" == "api" && "$action" == "schema" && "$words[4]" == "export" && CURRENT -eq 5 ]]; then
+        _microcms_endpoints
+        return
+      fi
+
       if [[ "$subcmd" == "content" && CURRENT -eq 4 ]]; then
         _microcms_endpoints
         return
@@ -378,7 +394,11 @@ _microcms() {
           _values 'auth command' login status profile
           ;;
         api)
-          _values 'api command' list info
+          if [[ "$action" == "schema" ]]; then
+            _values 'api schema command' inspect export
+          else
+            _values 'api command' list info schema
+          fi
           ;;
         content)
           _values 'content command' list get diff create update delete export import bulk meta status created-by
@@ -435,7 +455,7 @@ complete -c microcms -f
 complete -c microcms -n '__fish_use_subcommand' -a 'api auth config completion content docs media member schema search spec task types validate'
 
 complete -c microcms -n '__fish_seen_subcommand_from auth' -a 'login status profile'
-complete -c microcms -n '__fish_seen_subcommand_from api' -a 'list info'
+complete -c microcms -n '__fish_seen_subcommand_from api' -a 'list info schema'
 complete -c microcms -n '__fish_seen_subcommand_from content' -a 'list get diff create update delete export import bulk meta status created-by'
 complete -c microcms -n '__fish_seen_subcommand_from docs' -a 'list get'
 complete -c microcms -n '__fish_seen_subcommand_from media' -a 'list upload delete'
@@ -446,7 +466,10 @@ complete -c microcms -n '__fish_seen_subcommand_from types' -a 'generate sync'
 complete -c microcms -n '__fish_seen_subcommand_from completion' -a 'install uninstall bash zsh fish'
 complete -c microcms -n '__fish_seen_subcommand_from task' -a 'list suggest guide'
 
+complete -c microcms -n '__fish_seen_subcommand_from api; and __fish_seen_subcommand_from schema' -a 'inspect export'
 complete -c microcms -n '__fish_seen_subcommand_from api; and __fish_seen_subcommand_from info; and __fish_is_nth_token 3' -a '(microcms completion endpoints 2>/dev/null)'
+complete -c microcms -n '__fish_seen_subcommand_from api; and __fish_seen_subcommand_from inspect; and __fish_is_nth_token 4' -a '(microcms completion endpoints 2>/dev/null)'
+complete -c microcms -n '__fish_seen_subcommand_from api; and __fish_seen_subcommand_from export; and __fish_is_nth_token 4' -a '(microcms completion endpoints 2>/dev/null)'
 complete -c microcms -n '__fish_seen_subcommand_from content; and __fish_is_nth_token 3' -a '(microcms completion endpoints 2>/dev/null)'
 complete -c microcms -n '__fish_seen_subcommand_from validate; and __fish_is_nth_token 2' -a '(microcms completion endpoints 2>/dev/null)'
 
