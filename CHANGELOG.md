@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-05-17
+
+This release makes direct content write dry-runs a better predictor of the actual write request.
+Previously, `content create/update --dry-run` could return `.ok == true` while execution later failed
+because validation, select normalization, and API error details were not aligned across the flow.
+
+### Changed
+- `content create/update --dry-run` now performs schema-based payload validation when schema metadata is available.
+- Direct write dry-runs now return both the user-provided `payload` and the `normalizedPayload` that execution would send to microCMS.
+- Single select validation now accepts single-item array payloads even when schema metadata also describes the field as a string.
+- JSON API errors now include the microCMS response body in `error.details` when available, without requiring `--verbose`.
+- Updated README / README.ja to document the direct write dry-run contract and JSON API error details.
+
+### Tests
+- Added regression coverage for the feedback case where dry-run success could diverge from write execution: direct content dry-run validation, normalized dry-run payload output, single select arrays with string type hints, and JSON API error details.
+
 ## [0.7.3] - 2026-03-13
 
 ### Changed

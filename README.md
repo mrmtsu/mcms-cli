@@ -144,6 +144,7 @@ microcms validate <endpoint> --file payload.json --json
 - managed-json v1 supports list APIs only. Object APIs, media sync, hooks/revalidate, and auto-merge are out of scope.
 - `content push` is verify-first by default and only performs remote writes when `--execute` is set.
 - delete is explicit-only in managed-json workflows. Removing a record file does not delete remote content; use `deletions/<id>.json` tombstones.
+- `content create/update --dry-run` validates against the API schema when it can be fetched and includes both the original `payload` and the write-time `normalizedPayload`.
 - `content bulk --dry-run` checks operation-file structure without API calls.
 - Add `--validate-payload` (or `--strict-warnings`) when you want schema-based payload checks.
 - Single select fields are accepted as either `"value"` or `["value"]` in CLI payloads. `managed-json` stores single select as a string, and write execution normalizes it to the array shape expected by the API.
@@ -266,6 +267,7 @@ Error:
 `error.details` is included when `--verbose` is enabled.
 For payload validation failures (`validate`, `content import`/`content bulk` with payload checks),
 `error.details` is always included to make CI diagnostics easier.
+For microCMS API failures in JSON mode, `error.details` includes the API response body when available.
 
 ## Exit codes
 

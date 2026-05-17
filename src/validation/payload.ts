@@ -147,7 +147,8 @@ export function validatePayload(payload: unknown, apiSchema?: unknown): Validati
       }
     }
 
-    const expectedType = inferExpectedType(field);
+    const expectedType =
+      kind === "select" && !isFieldMultiple(field) ? null : inferExpectedType(field);
     if (expectedType && !matchesExpectedType(value, expectedType)) {
       const actualType = describeValueType(value);
       const message = `Field type mismatch: ${key} expected ${expectedType} (actual ${actualType})`;

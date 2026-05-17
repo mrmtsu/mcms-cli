@@ -68,7 +68,7 @@ export function printError(
 ): void {
   const payload: ErrorEnvelope = {
     ok: false,
-    error: error.toJson({ includeDetails: ctx.verbose }),
+    error: error.toJson({ includeDetails: shouldIncludeErrorDetails(ctx, error) }),
     meta: {
       requestId,
       version: OUTPUT_VERSION,
@@ -84,6 +84,10 @@ export function printError(
   if (ctx.verbose && error.details) {
     process.stderr.write(`${inspect(error.details, { colors: ctx.color, depth: 6 })}\n`);
   }
+}
+
+function shouldIncludeErrorDetails(ctx: RuntimeContext, error: CliError): boolean {
+  return ctx.verbose || (ctx.json && error.code === "API_ERROR");
 }
 
 function renderPlain(data: unknown, selectFields?: string[]): string {

@@ -73,6 +73,22 @@ describe("payload validation v2", () => {
     expect(invalid.errors.join("\n")).toContain("single-item array");
   });
 
+  it("does not reject single select arrays because of string type hints", () => {
+    const schema = {
+      apiFields: [
+        {
+          fieldId: "domain",
+          kind: "select",
+          type: "string",
+          multipleSelect: false,
+          selectItems: [{ value: "coffee" }],
+        },
+      ],
+    };
+
+    expect(validatePayload({ domain: ["coffee"] }, schema).valid).toBe(true);
+  });
+
   it("avoids type errors for unknown field kinds", () => {
     const schema = {
       apiFields: [
