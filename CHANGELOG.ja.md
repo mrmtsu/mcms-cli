@@ -7,6 +7,17 @@
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-05-17
+
+### 変更
+- `content create/update --dry-run` で、取得できる場合は API schema による payload 検証を行い、元の `payload` と書き込み時の `normalizedPayload` を返すようにした。
+- schema metadata に string 型ヒントが含まれる single select でも、単一要素の配列 payload を引き続き受け付けるようにした。
+- JSON mode の API error で、取得できる場合は microCMS の response body を `--verbose` なしでも `error.details` に含めるようにした。
+- direct write dry-run と JSON API error details の挙動を README / README.ja に追記した。
+
+### テスト
+- direct content dry-run validation、dry-run の normalized payload 出力、string 型ヒント付き single select 配列、JSON API error details の回帰テストを追加した。
+
 ## [0.7.3] - 2026-03-13
 
 ### 変更
