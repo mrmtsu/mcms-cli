@@ -144,6 +144,7 @@ microcms validate <endpoint> --file payload.json --json
 - managed-json v1 は list API のみ対応です。object API、media 同期、hooks/revalidate、自動マージは対象外です。
 - `content push` はデフォルトで verify のみ行い、remote 書き込みは `--execute` 指定時だけ行います。
 - managed-json の delete は明示 tombstone 方式です。record file を消しただけでは remote delete されません。
+- `content create/update --dry-run` は取得できる場合に API schema で検証し、元の `payload` と書き込み時の `normalizedPayload` を出力します。
 - `content bulk --dry-run` は API 呼び出しなしで操作定義ファイルの構造のみ検証します。
 - スキーマに基づく payload 検証が必要な場合は `--validate-payload`（または `--strict-warnings`）を指定してください。
 - single select フィールドは CLI payload では `"value"` と `["value"]` の両方を受け付けます。managed-json は string で保存し、書き込み実行時に API 互換の配列 shape へ正規化します。
@@ -266,6 +267,7 @@ Error:
 `error.details` は `--verbose` 指定時に含まれます。
 ただし、payload 検証失敗（`validate`、payload 検証付きの `content import` / `content bulk`）では、
 原因特定のため `error.details` を常時返します。
+JSON mode の microCMS API 失敗では、取得できる場合に API response body を `error.details` に含めます。
 
 ## 終了コード
 

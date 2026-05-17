@@ -789,6 +789,32 @@ export function registerContentCommands(program: Command): void {
           const payload = assertObjectPayload(await readJsonFile(options.file));
 
           if (options.dryRun) {
+            const requestState = { requestId: null as string | null };
+            const schema = await loadEndpointSchema(
+              ctx,
+              endpoint,
+              new Map<string, unknown | null>(),
+              requestState,
+            );
+            const validation = validatePayload(payload, schema);
+            if (!validation.valid) {
+              const summary = summarizeValidationFailure(validation);
+              throw new CliError({
+                code: "INVALID_INPUT",
+                message: summary
+                  ? `Content create dry-run validation failed: ${summary}`
+                  : "Content create dry-run validation failed",
+                exitCode: EXIT_CODE.INVALID_INPUT,
+                detailsVisibility: "always",
+                details: {
+                  endpoint,
+                  file: options.file,
+                  ...validation,
+                },
+              });
+            }
+
+            const normalizedPayload = normalizePayloadForWrite(payload, schema);
             printSuccess(
               ctx,
               withOperationConfirmation("content.create", {
@@ -796,7 +822,10 @@ export function registerContentCommands(program: Command): void {
                 operation: "content.create",
                 endpoint,
                 payload,
+                normalizedPayload,
+                validation,
               }),
+              requestState.requestId,
             );
             return;
           }
@@ -824,6 +853,33 @@ export function registerContentCommands(program: Command): void {
           const payload = assertObjectPayload(await readJsonFile(options.file));
 
           if (options.dryRun) {
+            const requestState = { requestId: null as string | null };
+            const schema = await loadEndpointSchema(
+              ctx,
+              endpoint,
+              new Map<string, unknown | null>(),
+              requestState,
+            );
+            const validation = validatePayload(payload, schema);
+            if (!validation.valid) {
+              const summary = summarizeValidationFailure(validation);
+              throw new CliError({
+                code: "INVALID_INPUT",
+                message: summary
+                  ? `Content update dry-run validation failed: ${summary}`
+                  : "Content update dry-run validation failed",
+                exitCode: EXIT_CODE.INVALID_INPUT,
+                detailsVisibility: "always",
+                details: {
+                  endpoint,
+                  id,
+                  file: options.file,
+                  ...validation,
+                },
+              });
+            }
+
+            const normalizedPayload = normalizePayloadForWrite(payload, schema);
             printSuccess(
               ctx,
               withOperationConfirmation("content.update", {
@@ -832,7 +888,10 @@ export function registerContentCommands(program: Command): void {
                 endpoint,
                 id,
                 payload,
+                normalizedPayload,
+                validation,
               }),
+              requestState.requestId,
             );
             return;
           }
@@ -2810,6 +2869,20 @@ function summarizeImportValidationFailure(
   const idLabel = first.id ? ` (id: ${first.id})` : "";
   const reason = reasons[0] ?? "validation failed";
   return `item #${first.index}${idLabel}: ${reason}`;
+}
+
+function summarizeValidationFailure(
+  result: { errors: string[]; warnings: string[] },
+  limit = 3,
+): string {
+  const reasons = result.errors.length > 0 ? result.errors : result.warnings;
+  if (reasons.length === 0) {
+    return "";
+  }
+
+  const head = reasons.slice(0, limit).join("; ");
+  const rest = reasons.length - Math.min(limit, reasons.length);
+  return rest > 0 ? `${head} (+${rest} more)` : head;
 }
 
 function summarizeBulkValidationFailure(
