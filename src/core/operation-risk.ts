@@ -18,6 +18,12 @@ const DEFAULT_POLICY: OperationPolicy = {
 };
 
 const OPERATION_POLICIES: Record<string, OperationPolicy> = {
+  "api.create": {
+    requiresConfirmation: true,
+    riskLevel: "high",
+    reason:
+      "Creates an API definition and may incur additional charges when --allow-additional-charge is used.",
+  },
   "content.create": {
     requiresConfirmation: false,
     riskLevel: "low",

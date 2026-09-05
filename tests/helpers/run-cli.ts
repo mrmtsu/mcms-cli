@@ -28,6 +28,7 @@ export function runCli(
     env: {
       ...process.env,
       MICROCMS_CLI_CONFIG_HOME: configRoot,
+      NODE_NO_WARNINGS: "1",
       ...env,
     },
     input: options.stdin,

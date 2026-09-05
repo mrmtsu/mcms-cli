@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+### 追加
+
+- microCMS Management API の API 定義作成に対応する `api create` コマンドを追加した。公式の作成 payload、基本設定の補完・上書き、追加料金許可、dry-run、JSON 出力を扱う。
+
 ## [0.7.4] - 2026-05-17
 
 このリリースでは、direct content write の dry-run を本実行の予測として信頼しやすくすることを主眼にした。

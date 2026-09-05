@@ -1,7 +1,7 @@
 import { buildTaskGuide } from "./task-workflow.js";
 
 const SKILL_DESCRIPTION =
-  "Safely automate microCMS (Japanese headless CMS) operations in AI/CI workflows. Use when you need schema-first content CRUD, bulk/import with dry-run validation, status/created-by changes, and machine-readable branching via `microcms ... --json`.";
+  "Safely automate microCMS (Japanese headless CMS) operations in AI/CI workflows. Use when you need API definition creation, schema-first content CRUD, bulk/import with dry-run validation, status/created-by changes, and machine-readable branching via `microcms ... --json`.";
 
 export const MCMS_CLI_SKILL_SOURCES = [
   "README.md",
@@ -23,6 +23,8 @@ const QUICK_START_COMMANDS = [
   "microcms schema pull --format json-schema --out schema.json --json        # JSON Schema (draft-07)",
   "microcms schema pull --format json-schema --include-extensions --out schema.json --json",
   "microcms api schema export blogs --out blogs-api-schema.json --json       # discoverable alias for single-endpoint export",
+  "microcms api create --file api-schema.json --dry-run --json",
+  "microcms api create --file api-schema.json --json",
   "microcms validate blogs --file payload.json --json",
   "microcms content create blogs --file payload.json --dry-run --json",
   "microcms content create blogs --file payload.json --json",
@@ -51,6 +53,7 @@ const WORKFLOW_TASK_IDS = [
   "api-schema-inspect",
   "api-schema-export",
   "api-schema-import-compat",
+  "api-create",
   "content-create",
   "content-update",
   "content-delete",
@@ -91,7 +94,9 @@ export function renderMcmsCliSkill(): string {
   lines.push("");
   lines.push("1. Always add `--json` for machine decisions.");
   lines.push("2. Always run write commands with `--dry-run` before real execution.");
-  lines.push("3. Always run `validate` or `--validate-payload` before create/update/import/bulk.");
+  lines.push(
+    "3. Always validate before create/update/import/bulk; `api create` validates its API definition file before the write.",
+  );
   lines.push("4. Prefer `--strict-warnings` for `content import` and `content bulk`.");
   lines.push("5. Decide success by both `.ok` and process exit code.");
   lines.push("6. Keep `meta.requestId` in logs for incident analysis.");

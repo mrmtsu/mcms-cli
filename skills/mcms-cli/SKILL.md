@@ -1,6 +1,6 @@
 ---
 name: mcms-cli
-description: Safely automate microCMS (Japanese headless CMS) operations in AI/CI workflows. Use when you need schema-first content CRUD, bulk/import with dry-run validation, status/created-by changes, and machine-readable branching via `microcms ... --json`.
+description: Safely automate microCMS (Japanese headless CMS) operations in AI/CI workflows. Use when you need API definition creation, schema-first content CRUD, bulk/import with dry-run validation, status/created-by changes, and machine-readable branching via `microcms ... --json`.
 metadata:
   generatedBy: scripts/generate-skill.ts
   sources:
@@ -31,6 +31,8 @@ microcms schema pull --format api-export --endpoints blogs --out blogs-api-schem
 microcms schema pull --format json-schema --out schema.json --json        # JSON Schema (draft-07)
 microcms schema pull --format json-schema --include-extensions --out schema.json --json
 microcms api schema export blogs --out blogs-api-schema.json --json       # discoverable alias for single-endpoint export
+microcms api create --file api-schema.json --dry-run --json
+microcms api create --file api-schema.json --json
 microcms validate blogs --file payload.json --json
 microcms content create blogs --file payload.json --dry-run --json
 microcms content create blogs --file payload.json --json
@@ -40,7 +42,7 @@ microcms content create blogs --file payload.json --json
 
 1. Always add `--json` for machine decisions.
 2. Always run write commands with `--dry-run` before real execution.
-3. Always run `validate` or `--validate-payload` before create/update/import/bulk.
+3. Always validate before create/update/import/bulk; `api create` validates its API definition file before the write.
 4. Prefer `--strict-warnings` for `content import` and `content bulk`.
 5. Decide success by both `.ok` and process exit code.
 6. Keep `meta.requestId` in logs for incident analysis.
@@ -145,6 +147,21 @@ Requires confirmation: `no`
    Risk: `low`, confirmation: `no`
 3. `microcms api schema inspect <endpoint> --json`
    Risk: `low`, confirmation: `no`
+
+### `api-create` - Create an API Safely
+
+Validate an API definition JSON file and create a new API with dry-run first.
+
+Risk: `high`
+Requires confirmation: `yes`
+
+1. `microcms api create --file <api-schema.json> --name <name> --endpoint <endpoint> --type <list|object> --dry-run --json`
+   Risk: `high`, confirmation: `yes`
+   Reason: Creates an API definition and may incur additional charges when --allow-additional-charge is used.
+2. `microcms api create --file <api-schema.json> --name <name> --endpoint <endpoint> --type <list|object> --json`
+   Risk: `high`, confirmation: `yes`
+   Reason: Creates an API definition and may incur additional charges when --allow-additional-charge is used.
+   Note: Use --name/--endpoint/--type when the file contains schema fields without the basic API settings. Add --allow-additional-charge only when the extra charge is intended.
 
 ### `content-create` - Create Content Safely
 
