@@ -189,7 +189,7 @@ microcms types sync --out microcms-types.d.ts --schema-out microcms-schema.json 
 
 `schema pull` が canonical なスキーマ出力コマンドです。単一 endpoint を API インポート互換 shape で保存したいときは discoverability alias の `api schema export` を使えます。
 
-`api create` は microCMS Management API の API 定義作成 payload を JSON ファイルから読み込みます。ファイルに `name` / `endpoint` / `type` がない場合や上書きしたい場合は、各オプションで補完・指定できます。作成前には必ず `--dry-run --json` を実行し、プラン上限超過に伴う追加料金を許可する場合だけ `--allow-additional-charge` を指定してください。
+`api create` は microCMS Management API で API を作成するための payload を JSON ファイルから読み込みます。ファイルに `name` / `endpoint` / `type` がない場合や上書きしたい場合は、各オプションで補完・指定できます。作成前には必ず `--dry-run --json` を実行し、プラン上限超過に伴う追加料金を許可する場合だけ `--allow-additional-charge` を指定してください。
 
 `--format json-schema` は [`@mrmtsu/microcms-schema-adapter`](https://github.com/mrmtsu/microcms-schema-adapter) を使用して microCMS スキーマを JSON Schema (draft-07) に変換します。
 

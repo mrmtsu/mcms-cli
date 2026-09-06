@@ -32,7 +32,7 @@ export function registerApiCommands(program: Command): void {
     .option("--type <type>", "API type: list|object (overrides file)")
     .option("--allow-additional-charge", "allow API creation above plan limit when supported")
     .option("--dry-run", "validate input without sending request")
-    .description("Create an API definition via Management API")
+    .description("Create an API via Management API")
     .action(
       withCommandContext(async (ctx, options: CreateOptions) => {
         const input = await readJsonFile(options.file);

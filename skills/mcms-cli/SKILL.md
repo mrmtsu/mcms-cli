@@ -1,6 +1,6 @@
 ---
 name: mcms-cli
-description: Safely automate microCMS (Japanese headless CMS) operations in AI/CI workflows. Use when you need API definition creation, schema-first content CRUD, bulk/import with dry-run validation, status/created-by changes, and machine-readable branching via `microcms ... --json`.
+description: Safely automate microCMS (Japanese headless CMS) operations in AI/CI workflows. Use when you need API creation, schema-first content CRUD, bulk/import with dry-run validation, status/created-by changes, and machine-readable branching via `microcms ... --json`.
 metadata:
   generatedBy: scripts/generate-skill.ts
   sources:
@@ -42,7 +42,7 @@ microcms content create blogs --file payload.json --json
 
 1. Always add `--json` for machine decisions.
 2. Always run write commands with `--dry-run` before real execution.
-3. Always validate before create/update/import/bulk; `api create` validates its API definition file before the write.
+3. Always validate before create/update/import/bulk; `api create` validates its API creation payload file before the write.
 4. Prefer `--strict-warnings` for `content import` and `content bulk`.
 5. Decide success by both `.ok` and process exit code.
 6. Keep `meta.requestId` in logs for incident analysis.
@@ -150,17 +150,17 @@ Requires confirmation: `no`
 
 ### `api-create` - Create an API Safely
 
-Validate an API definition JSON file and create a new API with dry-run first.
+Validate an API creation payload and create a new API with dry-run first.
 
 Risk: `high`
 Requires confirmation: `yes`
 
 1. `microcms api create --file <api-schema.json> --name <name> --endpoint <endpoint> --type <list|object> --dry-run --json`
    Risk: `high`, confirmation: `yes`
-   Reason: Creates an API definition and may incur additional charges when --allow-additional-charge is used.
+   Reason: Creates an API and may incur additional charges when --allow-additional-charge is used.
 2. `microcms api create --file <api-schema.json> --name <name> --endpoint <endpoint> --type <list|object> --json`
    Risk: `high`, confirmation: `yes`
-   Reason: Creates an API definition and may incur additional charges when --allow-additional-charge is used.
+   Reason: Creates an API and may incur additional charges when --allow-additional-charge is used.
    Note: Use --name/--endpoint/--type when the file contains schema fields without the basic API settings. Add --allow-additional-charge only when the extra charge is intended.
 
 ### `content-create` - Create Content Safely

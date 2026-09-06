@@ -22,7 +22,7 @@ const OPERATION_POLICIES: Record<string, OperationPolicy> = {
     requiresConfirmation: true,
     riskLevel: "high",
     reason:
-      "Creates an API definition and may incur additional charges when --allow-additional-charge is used.",
+      "Creates an API and may incur additional charges when --allow-additional-charge is used.",
   },
   "content.create": {
     requiresConfirmation: false,

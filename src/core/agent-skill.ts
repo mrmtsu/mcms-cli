@@ -1,7 +1,7 @@
 import { buildTaskGuide } from "./task-workflow.js";
 
 const SKILL_DESCRIPTION =
-  "Safely automate microCMS (Japanese headless CMS) operations in AI/CI workflows. Use when you need API definition creation, schema-first content CRUD, bulk/import with dry-run validation, status/created-by changes, and machine-readable branching via `microcms ... --json`.";
+  "Safely automate microCMS (Japanese headless CMS) operations in AI/CI workflows. Use when you need API creation, schema-first content CRUD, bulk/import with dry-run validation, status/created-by changes, and machine-readable branching via `microcms ... --json`.";
 
 export const MCMS_CLI_SKILL_SOURCES = [
   "README.md",
@@ -95,7 +95,7 @@ export function renderMcmsCliSkill(): string {
   lines.push("1. Always add `--json` for machine decisions.");
   lines.push("2. Always run write commands with `--dry-run` before real execution.");
   lines.push(
-    "3. Always validate before create/update/import/bulk; `api create` validates its API definition file before the write.",
+    "3. Always validate before create/update/import/bulk; `api create` validates its API creation payload file before the write.",
   );
   lines.push("4. Prefer `--strict-warnings` for `content import` and `content bulk`.");
   lines.push("5. Decide success by both `.ok` and process exit code.");

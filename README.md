@@ -189,7 +189,7 @@ microcms types sync --out microcms-types.d.ts --schema-out microcms-schema.json 
 
 `schema pull` is the canonical schema export entrypoint. Use `api schema export` as the discoverability alias when you want a single endpoint in API import-compatible shape.
 
-`api create` reads the microCMS Management API API-definition creation payload from a JSON file. Use `--name`, `--endpoint`, or `--type` to fill in or override the basic settings when the file only contains schema fields. Always run `--dry-run --json` before creation, and add `--allow-additional-charge` only when plan-limit overage and its additional charge are intended.
+`api create` reads an API creation payload for the microCMS Management API from a JSON file. Use `--name`, `--endpoint`, or `--type` to fill in or override the basic settings when the file only contains schema fields. Always run `--dry-run --json` before creation, and add `--allow-additional-charge` only when plan-limit overage and its additional charge are intended.
 
 `--format json-schema` uses [`@mrmtsu/microcms-schema-adapter`](https://github.com/mrmtsu/microcms-schema-adapter) to convert microCMS schemas to JSON Schema (draft-07).
 

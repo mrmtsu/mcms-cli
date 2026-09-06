@@ -117,7 +117,7 @@ const DISCOVERY_HINTS: DiscoveryHintSpec[] = [
     note: "`schema pull` remains canonical; `api schema export` is the discoverability alias.",
   },
   {
-    intent: "Create an API definition safely",
+    intent: "Create an API safely",
     commands: [
       "microcms api schema export <endpoint> --out <endpoint>-api-schema.json --json",
       "microcms api create --file <api-schema.json> --name <name> --endpoint <endpoint> --type <list|object> --dry-run --json",
@@ -186,7 +186,7 @@ const COMMANDS: CommandSpec[] = [
   },
   {
     path: "api create",
-    description: "create an API definition via Management API",
+    description: "create an API via Management API",
     args: [],
     options: [
       "--file <path>",

@@ -144,7 +144,7 @@ const TASK_TEMPLATES: TaskTemplate[] = [
   {
     id: "api-create",
     title: "Create an API Safely",
-    summary: "Validate an API definition JSON file and create a new API with dry-run first.",
+    summary: "Validate an API creation payload and create a new API with dry-run first.",
     aliases: ["create-api", "new-api", "api-bootstrap", "api-provision"],
     steps: [
       {
