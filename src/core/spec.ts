@@ -117,6 +117,15 @@ const DISCOVERY_HINTS: DiscoveryHintSpec[] = [
     note: "`schema pull` remains canonical; `api schema export` is the discoverability alias.",
   },
   {
+    intent: "Create an API safely",
+    commands: [
+      "microcms api schema export <endpoint> --out <endpoint>-api-schema.json --json",
+      "microcms api create --file <api-schema.json> --name <name> --endpoint <endpoint> --type <list|object> --dry-run --json",
+      "microcms api create --file <api-schema.json> --name <name> --endpoint <endpoint> --type <list|object> --json",
+    ],
+    note: "Validate the API creation payload and review high-risk metadata before the write.",
+  },
+  {
     intent: "Validate then write content safely",
     commands: [
       "microcms schema pull --out microcms-schema.json --json",
@@ -176,12 +185,27 @@ const COMMANDS: CommandSpec[] = [
     readOnly: false,
   },
   {
+    path: "api create",
+    description: "create an API via Management API",
+    args: [],
+    options: [
+      "--file <path>",
+      "--name <name>",
+      "--endpoint <endpoint>",
+      "--type <type>",
+      "--allow-additional-charge",
+      "--dry-run",
+    ],
+    readOnly: false,
+    relatedCommands: ["api list", "api info", "api schema export"],
+  },
+  {
     path: "api list",
     description: "list APIs",
     args: [],
     options: [],
     readOnly: true,
-    relatedCommands: ["api info", "api schema export", "schema pull"],
+    relatedCommands: ["api create", "api info", "api schema export", "schema pull"],
   },
   {
     path: "api info",
@@ -189,7 +213,7 @@ const COMMANDS: CommandSpec[] = [
     args: ["<endpoint>"],
     options: [],
     readOnly: true,
-    relatedCommands: ["api schema inspect", "api schema export", "schema pull"],
+    relatedCommands: ["api create", "api schema inspect", "api schema export", "schema pull"],
   },
   {
     path: "api schema inspect",
@@ -197,7 +221,7 @@ const COMMANDS: CommandSpec[] = [
     args: ["<endpoint>"],
     options: [],
     readOnly: true,
-    relatedCommands: ["api info", "api schema export", "schema pull"],
+    relatedCommands: ["api create", "api info", "api schema export", "schema pull"],
   },
   {
     path: "api schema export",
@@ -205,7 +229,7 @@ const COMMANDS: CommandSpec[] = [
     args: ["<endpoint>"],
     options: ["--out <path>"],
     readOnly: true,
-    relatedCommands: ["schema pull", "api schema inspect", "docs get"],
+    relatedCommands: ["schema pull", "api schema inspect", "api create", "docs get"],
   },
   {
     path: "member get",

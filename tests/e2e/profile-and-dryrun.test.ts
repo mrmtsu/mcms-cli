@@ -160,6 +160,26 @@ describe("profile and dry-run flows", () => {
     expect(mediaDeleteBody.data.operation).toBe("media.delete");
     expect(mediaDeleteBody.data.requiresConfirmation).toBe(true);
     expect(mediaDeleteBody.data.riskLevel).toBe("high");
+
+    const apiWorkDir = mkdtempSync(join(tmpdir(), "microcms-cli-api-dryrun-"));
+    const apiPayloadPath = join(apiWorkDir, "api-create.json");
+    writeFileSync(
+      apiPayloadPath,
+      JSON.stringify({
+        name: "Blog",
+        endpoint: "blogs",
+        type: "list",
+        apiFields: [{ fieldId: "title", name: "Title", kind: "text" }],
+      }),
+      "utf8",
+    );
+
+    const apiResult = runCli(["api", "create", "--file", apiPayloadPath, "--dry-run", "--json"]);
+    expect(apiResult.code).toBe(0);
+    const apiBody = JSON.parse(apiResult.stdout);
+    expect(apiBody.data.operation).toBe("api.create");
+    expect(apiBody.data.requiresConfirmation).toBe(true);
+    expect(apiBody.data.riskLevel).toBe("high");
   });
 
   it("validates media list options before network calls", () => {

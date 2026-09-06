@@ -142,6 +142,27 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     ],
   },
   {
+    id: "api-create",
+    title: "Create an API Safely",
+    summary: "Validate an API creation payload and create a new API with dry-run first.",
+    aliases: ["create-api", "new-api", "api-bootstrap", "api-provision"],
+    steps: [
+      {
+        title: "Dry-run API creation",
+        command:
+          "microcms api create --file <api-schema.json> --name <name> --endpoint <endpoint> --type <list|object> --dry-run --json",
+        operation: "api.create",
+      },
+      {
+        title: "Create the API",
+        command:
+          "microcms api create --file <api-schema.json> --name <name> --endpoint <endpoint> --type <list|object> --json",
+        operation: "api.create",
+        note: "Use --name/--endpoint/--type when the file contains schema fields without the basic API settings. Add --allow-additional-charge only when the extra charge is intended.",
+      },
+    ],
+  },
+  {
     id: "content-create",
     title: "Create Content Safely",
     summary: "Validate payload and create a new content item with dry-run first.",

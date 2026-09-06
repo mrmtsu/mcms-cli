@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-05
+
+### Added
+
+- Added `api create` for creating APIs through the microCMS Management API, including official creation payloads, basic-setting overrides, additional-charge opt-in, dry-run validation, and JSON output.
+
+### Tests
+
+- Added unit, e2e, and contract coverage for API creation validation, requests, command metadata, and dry-run workflows.
+
 ## [0.7.4] - 2026-05-17
 
 This release makes direct content write dry-runs a better predictor of the actual write request.

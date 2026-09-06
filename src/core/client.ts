@@ -5,6 +5,7 @@ import type { RuntimeContext } from "./context.js";
 import { CliError, fromHttpStatus } from "./errors.js";
 import { EXIT_CODE } from "./exit-codes.js";
 import { requestFormData, requestJson } from "./http.js";
+import type { ApiCreatePayload } from "../validation/api-creation.js";
 
 function assertAuth(
   ctx: RuntimeContext,
@@ -297,6 +298,28 @@ export async function getApiInfo(
     retry: ctx.retry,
     retryMaxDelayMs: ctx.retryMaxDelayMs,
     verbose: ctx.verbose,
+  });
+
+  return { data: result.data, requestId: result.requestId };
+}
+
+export async function createApi(
+  ctx: RuntimeContext,
+  payload: ApiCreatePayload,
+  options: { allowAdditionalCharge?: boolean } = {},
+): Promise<{ data: unknown; requestId: string | null }> {
+  assertAuth(ctx);
+  const queries = options.allowAdditionalCharge ? { allowAdditionalCharge: true } : undefined;
+  const url = buildApiUrl(getManagementBaseUrl(ctx), ["apis"], queries);
+  const result = await requestJson<unknown>({
+    url,
+    method: "POST",
+    apiKey: ctx.apiKey,
+    timeoutMs: ctx.timeoutMs,
+    retry: ctx.retry,
+    retryMaxDelayMs: ctx.retryMaxDelayMs,
+    verbose: ctx.verbose,
+    body: payload,
   });
 
   return { data: result.data, requestId: result.requestId };

@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { getOperationConfirmation } from "../../src/core/operation-risk.js";
 
 describe("operation risk policy", () => {
+  it("marks API creation as high risk", () => {
+    const policy = getOperationConfirmation("api.create");
+    expect(policy.requiresConfirmation).toBe(true);
+    expect(policy.riskLevel).toBe("high");
+    expect(policy.confirmationReason).toContain("Creates an API");
+  });
+
   it("marks destructive operations with confirmation requirements", () => {
     const policy = getOperationConfirmation("content.delete");
     expect(policy.requiresConfirmation).toBe(true);

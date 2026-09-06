@@ -97,6 +97,8 @@ microcms api list --json
 microcms api info <endpoint> --json
 microcms api schema inspect <endpoint> --json
 microcms api schema export <endpoint> --out <endpoint>-api-schema.json --json
+microcms api create --file api-schema.json --dry-run --json
+microcms api create --file api-schema.json --json
 microcms member get <memberId> --json
 
 microcms content list <endpoint> --json
@@ -186,6 +188,8 @@ microcms types sync --out microcms-types.d.ts --schema-out microcms-schema.json 
 ```
 
 `schema pull` is the canonical schema export entrypoint. Use `api schema export` as the discoverability alias when you want a single endpoint in API import-compatible shape.
+
+`api create` reads an API creation payload for the microCMS Management API from a JSON file. Use `--name`, `--endpoint`, or `--type` to fill in or override the basic settings when the file only contains schema fields. Always run `--dry-run --json` before creation, and add `--allow-additional-charge` only when plan-limit overage and its additional charge are intended.
 
 `--format json-schema` uses [`@mrmtsu/microcms-schema-adapter`](https://github.com/mrmtsu/microcms-schema-adapter) to convert microCMS schemas to JSON Schema (draft-07).
 
@@ -293,7 +297,7 @@ npm run build
 
 ## Notes
 
-- `api list/info` and `media list/upload` use microCMS Management API.
+- `api list/info/create` and `media list/upload` use microCMS Management API.
 - Default management API base URL is `https://<serviceDomain>.microcms-management.io`.
 - You can override with `MICROCMS_MANAGEMENT_API_BASE_URL`.
 - Content API base URL is `https://<serviceDomain>.microcms.io`.

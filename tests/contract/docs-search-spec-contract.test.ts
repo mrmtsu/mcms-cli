@@ -125,6 +125,11 @@ describe("docs/search/spec contract", () => {
     ).toBe(true);
     expect(
       (specBody.data.commands as Array<{ path?: string }>).some(
+        (command) => command.path === "api create",
+      ),
+    ).toBe(true);
+    expect(
+      (specBody.data.commands as Array<{ path?: string }>).some(
         (command) => command.path === "task list",
       ),
     ).toBe(true);

@@ -10,6 +10,7 @@ describe("cli spec", () => {
     expect(spec.exitCodes.INVALID_INPUT).toBe(2);
     expect(spec.commands.some((command) => command.path === "docs list")).toBe(true);
     expect(spec.commands.some((command) => command.path === "docs get")).toBe(true);
+    expect(spec.commands.some((command) => command.path === "api create")).toBe(true);
     expect(spec.commands.some((command) => command.path === "api schema inspect")).toBe(true);
     expect(spec.commands.some((command) => command.path === "api schema export")).toBe(true);
     expect(spec.commands.some((command) => command.path === "member get")).toBe(true);
@@ -32,5 +33,15 @@ describe("cli spec", () => {
 
     const schemaPull = spec.commands.find((command) => command.path === "schema pull");
     expect(schemaPull?.relatedCommands).toContain("api schema export");
+
+    const apiCreate = spec.commands.find((command) => command.path === "api create");
+    expect(apiCreate?.readOnly).toBe(false);
+    expect(apiCreate?.options).toContain("--dry-run");
+    expect(apiCreate?.options).toContain("--allow-additional-charge");
+    expect(
+      spec.discoveryHints.some((hint) =>
+        hint.commands.some((command) => command.includes("api create")),
+      ),
+    ).toBe(true);
   });
 });
