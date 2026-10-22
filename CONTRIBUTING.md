@@ -4,7 +4,7 @@ Thanks for contributing to `mcms-cli`.
 
 ## Development Setup
 
-1. Install Node.js 20+.
+1. Install a supported Node.js release: 22.23.4 or newer 22.x, 24.22.1 or newer 24.x, or 26.12.1 or newer 26.x.
 2. Install dependencies:
    ```bash
    npm install

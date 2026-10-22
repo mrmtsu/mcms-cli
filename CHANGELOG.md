@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Require patched Node.js 22.23.4+, 24.22.1+, or 26.12.1+ within their respective release lines. Node.js 20 is no longer supported; CI now tests all three supported lines.
+
 ## [0.8.0] - 2026-09-05
 
 ### Added
