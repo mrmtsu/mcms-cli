@@ -2,6 +2,7 @@ import { EXIT_CODE, type ExitCode } from "./exit-codes.js";
 
 export type ErrorCode =
   | "INVALID_INPUT"
+  | "UNSUPPORTED_NODE_VERSION"
   | "AUTH_FAILED"
   | "FORBIDDEN"
   | "NETWORK_ERROR"

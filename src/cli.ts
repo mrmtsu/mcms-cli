@@ -18,6 +18,7 @@ import { registerValidateCommand } from "./commands/validate.js";
 import type { RuntimeContext } from "./core/context.js";
 import { CliError, normalizeError } from "./core/errors.js";
 import { EXIT_CODE } from "./core/exit-codes.js";
+import { isSupportedNodeVersion } from "./core/node-version.js";
 import { printError } from "./core/output.js";
 
 type PackageJson = {
@@ -45,6 +46,19 @@ function resolveVersion(): string {
 }
 
 async function main(argv: string[]): Promise<void> {
+  if (!isSupportedNodeVersion(process.versions.node)) {
+    printError(
+      createFallbackContext(argv),
+      new CliError({
+        code: "UNSUPPORTED_NODE_VERSION",
+        message: `Node.js ${process.versions.node} is unsupported. Install Node.js 22.23.4+, 24.22.1+, or 26.12.1+.`,
+        exitCode: EXIT_CODE.INVALID_INPUT,
+      }),
+    );
+    process.exitCode = EXIT_CODE.INVALID_INPUT;
+    return;
+  }
+
   const isJsonMode = argv.includes("--json");
   const program = new Command();
 

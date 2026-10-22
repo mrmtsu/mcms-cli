@@ -18,6 +18,8 @@ This project is unofficial, and that is explicitly stated in this README.
 
 ## Install
 
+Use Node.js 22.23.4 or newer 22.x, 24.22.1 or newer 24.x, or 26.12.1 or newer 26.x. Update Node.js itself to receive its security fixes; updating this CLI does not update the runtime.
+
 ```bash
 npm i -g @mrmtsu/mcms-cli
 # or

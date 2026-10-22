@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-22
+
 ### Changed
 
 - Require patched Node.js 22.23.4+, 24.22.1+, or 26.12.1+ within their respective release lines. Node.js 20 is no longer supported; CI now tests all three supported lines.
+- Reject unsupported Node.js versions at CLI startup, including in JSON mode. Document that users must update Node.js separately from the CLI.
+- Update locked dependencies and oxfmt to resolve npm audit findings.
 
 ## [0.8.0] - 2026-09-05
 
