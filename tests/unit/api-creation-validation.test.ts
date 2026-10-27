@@ -59,6 +59,72 @@ describe("API creation validation", () => {
     ).toThrow(CliError);
   });
 
+  it("requires 10-character select item IDs in API and custom fields", () => {
+    const payload = {
+      name: "Bookmarks",
+      endpoint: "bookmarks",
+      type: "list",
+      apiFields: [
+        {
+          fieldId: "category",
+          name: "Category",
+          kind: "select",
+          selectItems: [{ id: "1234567890", value: "Article" }],
+        },
+      ],
+      customFields: [
+        {
+          fieldId: "details",
+          name: "Details",
+          fields: [
+            {
+              fieldId: "status",
+              name: "Status",
+              kind: "select",
+              selectItems: [{ id: "abcdefghij", value: "Ready" }],
+            },
+          ],
+          fieldOrderByColumn: [["status"]],
+        },
+      ],
+    };
+
+    expect(parseApiCreatePayload(payload)).toEqual(payload);
+
+    const invalid = {
+      ...payload,
+      apiFields: [{ ...payload.apiFields[0], selectItems: [{ id: "short", value: "Article" }] }],
+      customFields: [
+        {
+          ...payload.customFields[0],
+          fields: [
+            {
+              ...payload.customFields[0].fields[0],
+              selectItems: [{ id: "12345678901", value: "Ready" }],
+            },
+          ],
+        },
+      ],
+    };
+
+    let error: unknown;
+    try {
+      parseApiCreatePayload(invalid);
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(CliError);
+    expect((error as CliError).details).toEqual(
+      expect.objectContaining({
+        issues: expect.arrayContaining([
+          expect.objectContaining({ path: "apiFields.0.selectItems.0.id" }),
+          expect.objectContaining({ path: "customFields.0.fields.0.selectItems.0.id" }),
+        ]),
+      }),
+    );
+  });
+
   it("reports structural errors with field paths", () => {
     let error: unknown;
     try {

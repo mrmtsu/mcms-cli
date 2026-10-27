@@ -20,13 +20,31 @@ const fieldIdSchema = z
     message: "reserved field ID",
   });
 
+const selectItemsSchema = z.array(z.object({ id: z.string().length(10) }).passthrough());
+
 const apiFieldSchema = z
   .object({
     fieldId: fieldIdSchema,
     name: z.string().min(1).max(100),
     kind: z.string().min(1),
   })
-  .passthrough();
+  .passthrough()
+  .superRefine((field, context) => {
+    if (field.kind !== "select" || field.selectItems === undefined) {
+      return;
+    }
+
+    const result = selectItemsSchema.safeParse(field.selectItems);
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        context.addIssue({
+          code: "custom",
+          path: ["selectItems", ...issue.path],
+          message: issue.message,
+        });
+      }
+    }
+  });
 
 const apiFieldsSchema = z
   .array(apiFieldSchema)
