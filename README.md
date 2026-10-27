@@ -193,6 +193,8 @@ microcms types sync --out microcms-types.d.ts --schema-out microcms-schema.json 
 
 `api create` reads an API creation payload for the microCMS Management API from a JSON file. Use `--name`, `--endpoint`, or `--type` to fill in or override the basic settings when the file only contains schema fields. Always run `--dry-run --json` before creation, and add `--allow-additional-charge` only when plan-limit overage and its additional charge are intended.
 
+For select fields in `apiFields` or `customFields[].fields`, each `selectItems[].id` must be exactly 10 characters. `api create --dry-run` reports an invalid ID before sending the request.
+
 `--format json-schema` uses [`@mrmtsu/microcms-schema-adapter`](https://github.com/mrmtsu/microcms-schema-adapter) to convert microCMS schemas to JSON Schema (draft-07).
 
 If type generation is your primary goal, we recommend using [wato787/microcms-cli](https://github.com/wato787/microcms-cli).

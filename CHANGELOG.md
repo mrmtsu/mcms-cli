@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Validate that select item IDs are exactly 10 characters in `api create --dry-run`, including select fields inside custom fields.
+
 ## [0.9.0] - 2026-10-22
 
 ### Changed

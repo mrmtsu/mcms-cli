@@ -95,4 +95,35 @@ describe("api create command", () => {
       expect.arrayContaining([expect.objectContaining({ path: "type" })]),
     );
   });
+
+  it("rejects short select item IDs during dry-run", () => {
+    const workDir = mkdtempSync(join(tmpdir(), "microcms-cli-api-create-select-"));
+    const payloadPath = join(workDir, "invalid-select.json");
+    writeFileSync(
+      payloadPath,
+      JSON.stringify({
+        name: "Bookmarks",
+        endpoint: "bookmarks",
+        type: "list",
+        apiFields: [
+          {
+            fieldId: "category",
+            name: "Category",
+            kind: "select",
+            selectItems: [{ id: "short", value: "Article" }],
+          },
+        ],
+      }),
+      "utf8",
+    );
+
+    const result = runCli(["api", "create", "--file", payloadPath, "--dry-run", "--json"]);
+
+    expect(result.code).toBe(2);
+    const body = JSON.parse(result.stderr);
+    expect(body.ok).toBe(false);
+    expect(body.error.details.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: "apiFields.0.selectItems.0.id" })]),
+    );
+  });
 });
