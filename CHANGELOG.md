@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Validate that select item IDs are exactly 10 characters in `api create --dry-run`, including select fields inside custom fields.
 
+### Security
+
+- Raise the minimum supported Node.js releases to 22.23.5, 24.22.3, and 26.13.1 after the
+  November 2026 security release. Update the CI matrix and startup check. Users must update
+  Node.js separately from this CLI.
+
 ## [0.9.0] - 2026-10-22
 
 ### Changed
