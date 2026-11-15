@@ -312,6 +312,14 @@ const COMMANDS: CommandSpec[] = [
     readOnly: true,
   },
   {
+    path: "content doctor",
+    description:
+      "run read-only health checks over existing contents (schema-derived checks plus an optional rules file)",
+    args: ["[endpoint]"],
+    options: ["--endpoints <endpoints>", "--rules <file>", "--max-examples <n>"],
+    readOnly: true,
+  },
+  {
     path: "content push",
     description: "verify and optionally execute managed-json changes against microCMS",
     args: ["[endpoint]"],

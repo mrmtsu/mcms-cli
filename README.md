@@ -141,12 +141,15 @@ microcms media upload <path> --json
 microcms media upload <path> --dry-run --json
 microcms media delete --url <media-url> --json
 microcms validate <endpoint> --file payload.json --json
+microcms content doctor --json
+microcms content doctor <endpoint> --rules doctor-rules.json --json
 ```
 
 - `content export --all` exports list APIs. Object APIs are skipped.
 - `content pull` / `content verify` / `content push` / `content sync-status` are the managed-json first cut for file-based content workflows.
 - managed-json v1 supports list APIs only. Object APIs, media sync, hooks/revalidate, and auto-merge are out of scope.
 - `content push` is verify-first by default and only performs remote writes when `--execute` is set.
+- `content doctor` runs read-only health checks over existing contents: required fields left empty, select values outside the schema options, broken relations, duplicate values in unique fields, and unreferenced contents. Checks are derived from each API schema; service-specific rules (extra required fields, unique keys, stale status detection) can be supplied with a `--rules` JSON file.
 - delete is explicit-only in managed-json workflows. Removing a record file does not delete remote content; use `deletions/<id>.json` tombstones.
 - `content create/update --dry-run` validates against the API schema when it can be fetched and includes both the original `payload` and the write-time `normalizedPayload`.
 - `content bulk --dry-run` checks operation-file structure without API calls.

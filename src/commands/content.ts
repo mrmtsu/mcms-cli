@@ -37,7 +37,17 @@ import {
   patchContentStatus,
   updateContent,
 } from "../core/client.js";
+import { extractApiFields, type ApiFieldRecord } from "../core/api-field-utils.js";
 import type { RuntimeContext } from "../core/context.js";
+import {
+  collectDoctorFieldIds,
+  parseDoctorRules,
+  referencedIds,
+  relationFieldsOf,
+  runDoctorChecks,
+  type DoctorEndpointRules,
+  type DoctorRules,
+} from "../core/doctor.js";
 import { CliError, normalizeError } from "../core/errors.js";
 import { EXIT_CODE } from "../core/exit-codes.js";
 import { assertObjectPayload, readJsonFile } from "../core/io.js";
@@ -740,6 +750,20 @@ export function registerContentCommands(program: Command): void {
           printSuccess(ctx, result.data, result.requestId);
         },
       ),
+    );
+
+  content
+    .command("doctor")
+    .argument("[endpoint]", "API endpoint")
+    .option("--endpoints <endpoints>", "comma-separated API endpoints")
+    .option("--rules <file>", "path to a doctor rules JSON file")
+    .option("--max-examples <n>", "max examples per finding (default 5)")
+    .description("Run read-only health checks over existing contents")
+    .action(
+      withCommandContext(async (ctx, endpoint: string | undefined, options: DoctorOptions) => {
+        const result = await runContentDoctor(ctx, endpoint, options);
+        printSuccess(ctx, result.payload, result.requestId);
+      }),
     );
 
   content
@@ -2252,6 +2276,245 @@ function parseListShape(data: unknown): {
     contents: candidate.contents,
     totalCount: candidate.totalCount,
   };
+}
+
+type DoctorOptions = {
+  endpoints?: string;
+  rules?: string;
+  maxExamples?: string;
+};
+
+type DoctorEndpointData = {
+  fields: ApiFieldRecord[];
+  records: Record<string, unknown>[];
+  totalCount: number;
+};
+
+function isDoctorRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+async function runContentDoctor(
+  ctx: RuntimeContext,
+  endpoint: string | undefined,
+  options: DoctorOptions,
+): Promise<{ payload: Record<string, unknown>; requestId: string | null }> {
+  let requestId: string | null = null;
+  const warnings: string[] = [];
+
+  let rules: DoctorRules | undefined;
+  if (options.rules) {
+    const raw = await readJsonFile(options.rules);
+    try {
+      rules = parseDoctorRules(raw);
+    } catch (error) {
+      throw new CliError({
+        code: "INVALID_INPUT",
+        message: error instanceof Error ? error.message : "Invalid doctor rules file.",
+        exitCode: EXIT_CODE.INVALID_INPUT,
+      });
+    }
+  }
+
+  if (endpoint && options.endpoints) {
+    throw new CliError({
+      code: "INVALID_INPUT",
+      message: "Do not pass [endpoint] together with --endpoints.",
+      exitCode: EXIT_CODE.INVALID_INPUT,
+    });
+  }
+
+  let endpoints: string[];
+  const csvEndpoints = parseCsvOption(options.endpoints);
+  if (endpoint) {
+    endpoints = [endpoint];
+  } else if (csvEndpoints.length > 0) {
+    endpoints = csvEndpoints;
+  } else {
+    const apis = await listApis(ctx);
+    requestId = apis.requestId ?? requestId;
+    endpoints = extractApiEndpoints(apis.data);
+  }
+
+  const maxExamples =
+    parseIntegerOption("max-examples", options.maxExamples, {
+      min: 0,
+      max: 50,
+    }) ?? 5;
+
+  const datasets = new Map<string, DoctorEndpointData>();
+  for (const ep of endpoints) {
+    const info = await getApiInfo(ctx, ep);
+    requestId = info.requestId ?? requestId;
+    const fields = extractApiFields(info.data);
+    const fetched = await fetchDoctorRecords(ctx, ep, fields, rules?.endpoints[ep], warnings);
+    requestId = fetched.requestId ?? requestId;
+    datasets.set(ep, { fields, records: fetched.records, totalCount: fetched.totalCount });
+  }
+
+  const relationTargets = new Map<string, Set<string>>();
+  const targetNames = new Set<string>();
+  for (const ds of datasets.values()) {
+    for (const rel of relationFieldsOf(ds.fields)) {
+      targetNames.add(rel.target);
+    }
+  }
+  for (const target of targetNames) {
+    const existing = datasets.get(target);
+    if (existing) {
+      relationTargets.set(
+        target,
+        new Set(
+          existing.records
+            .map((record) => record.id)
+            .filter((value): value is string => typeof value === "string"),
+        ),
+      );
+      continue;
+    }
+    try {
+      relationTargets.set(target, await fetchDoctorIds(ctx, target));
+    } catch {
+      warnings.push(
+        `Could not fetch relation target "${target}"; relation checks for it were skipped.`,
+      );
+    }
+  }
+
+  const referencedBy = new Map<string, Set<string>>();
+  const incoming = new Set<string>();
+  for (const ds of datasets.values()) {
+    for (const rel of relationFieldsOf(ds.fields)) {
+      incoming.add(rel.target);
+      let set = referencedBy.get(rel.target);
+      if (!set) {
+        set = new Set<string>();
+        referencedBy.set(rel.target, set);
+      }
+      for (const record of ds.records) {
+        for (const id of referencedIds(record[rel.fieldId])) {
+          set.add(id);
+        }
+      }
+    }
+  }
+
+  const now = new Date();
+  const endpointResults = endpoints.map((ep) => {
+    const ds = datasets.get(ep) as DoctorEndpointData;
+    const findings = runDoctorChecks({
+      fields: ds.fields,
+      records: ds.records,
+      rules: rules?.endpoints[ep],
+      relationTargets,
+      referencedIds: referencedBy.get(ep),
+      hasIncomingRelations: incoming.has(ep),
+      now,
+      maxExamples,
+    });
+    return { endpoint: ep, totalCount: ds.totalCount, checked: ds.records.length, findings };
+  });
+
+  const summary = {
+    endpoints: endpointResults.length,
+    records: 0,
+    errors: 0,
+    warnings: 0,
+    infos: 0,
+  };
+  for (const result of endpointResults) {
+    summary.records += result.checked;
+    for (const finding of result.findings) {
+      if (finding.severity === "error") {
+        summary.errors += finding.count;
+      } else if (finding.severity === "warning") {
+        summary.warnings += finding.count;
+      } else {
+        summary.infos += finding.count;
+      }
+    }
+  }
+
+  return {
+    requestId,
+    payload: {
+      operation: "content.doctor",
+      serviceDomain: ctx.serviceDomain ?? null,
+      checkedAt: now.toISOString(),
+      rulesApplied: rules !== undefined,
+      endpoints: endpointResults,
+      summary,
+      ...(warnings.length > 0 ? { warnings } : {}),
+    },
+  };
+}
+
+async function fetchDoctorRecords(
+  ctx: RuntimeContext,
+  endpoint: string,
+  fields: ApiFieldRecord[],
+  rules: DoctorEndpointRules | undefined,
+  warnings: string[],
+): Promise<{ records: Record<string, unknown>[]; totalCount: number; requestId: string | null }> {
+  const scopedFields = collectDoctorFieldIds(fields, rules).join(",");
+  const attempts: ListContentQuery[] = [{ fields: scopedFields, limit: 100 }, { limit: 100 }];
+  let lastError: unknown = null;
+
+  for (const queries of attempts) {
+    try {
+      const result = await listContentAllWithFetcher(ctx, endpoint, queries, (nextQueries) =>
+        listContent(ctx, endpoint, nextQueries),
+      );
+      const page = parseListShape(result.data);
+      if (page) {
+        return {
+          records: page.contents.filter(isDoctorRecord),
+          totalCount: page.totalCount,
+          requestId: result.requestId,
+        };
+      }
+      lastError = new Error(`Unexpected list response shape for endpoint "${endpoint}".`);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  // Object-type APIs return a single record instead of a list.
+  const single = await listContent(ctx, endpoint, {});
+  if (isDoctorRecord(single.data)) {
+    warnings.push(`Endpoint "${endpoint}" did not return a list; treated as a single-record API.`);
+    return { records: [single.data], totalCount: 1, requestId: single.requestId };
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new CliError({
+        code: "API_ERROR",
+        message: `Failed to fetch contents for endpoint "${endpoint}".`,
+        exitCode: EXIT_CODE.UNKNOWN,
+      });
+}
+
+async function fetchDoctorIds(ctx: RuntimeContext, endpoint: string): Promise<Set<string>> {
+  const attempts: ListContentQuery[] = [{ fields: "id", limit: 100 }, { limit: 100 }];
+  for (const queries of attempts) {
+    try {
+      const result = await listContentAllWithFetcher(ctx, endpoint, queries, (nextQueries) =>
+        listContent(ctx, endpoint, nextQueries),
+      );
+      const page = parseListShape(result.data);
+      if (page) {
+        return new Set(
+          page.contents.flatMap((item) =>
+            isDoctorRecord(item) && typeof item.id === "string" ? [item.id] : [],
+          ),
+        );
+      }
+    } catch {
+      // try the next attempt
+    }
+  }
+  throw new Error(`Failed to fetch ids for endpoint "${endpoint}".`);
 }
 
 function parseContentStatus(value: string): "PUBLISH" | "DRAFT" {

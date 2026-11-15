@@ -34,6 +34,7 @@ microcms api schema export blogs --out blogs-api-schema.json --json       # disc
 microcms api create --file api-schema.json --dry-run --json
 microcms api create --file api-schema.json --json
 microcms validate blogs --file payload.json --json
+microcms content doctor --json                                                   # read-only health checks over existing contents
 microcms content create blogs --file payload.json --dry-run --json
 microcms content create blogs --file payload.json --json
 ```
