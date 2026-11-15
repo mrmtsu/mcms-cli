@@ -249,6 +249,7 @@ export function runDoctorChecks(context: DoctorCheckContext): DoctorFinding[] {
 
   const records = context.records;
   const rules = context.rules ?? {};
+  const uniqueFieldSources = new Map<string, string>();
 
   for (const field of context.fields) {
     const fieldId = fieldIdOf(field);
@@ -305,12 +306,18 @@ export function runDoctorChecks(context: DoctorCheckContext): DoctorFinding[] {
     }
 
     if (field.isUnique === true) {
-      addUniqueFindings(add, records, fieldId, "schema isUnique");
+      uniqueFieldSources.set(fieldId, "schema isUnique");
     }
   }
 
   for (const fieldId of rules.unique ?? []) {
-    addUniqueFindings(add, records, fieldId, "rules.unique");
+    if (!uniqueFieldSources.has(fieldId)) {
+      uniqueFieldSources.set(fieldId, "rules.unique");
+    }
+  }
+
+  for (const [fieldId, source] of uniqueFieldSources) {
+    addUniqueFindings(add, records, fieldId, source);
   }
 
   for (const fieldId of rules.requireFields ?? []) {

@@ -98,6 +98,21 @@ describe("doctor checks", () => {
     expect(finding?.examples[0]?.id).toBe("c");
   });
 
+  it("counts duplicate values once when schema and rules share a unique field", () => {
+    const findings = runDoctorChecks({
+      fields: [{ fieldId: "key", kind: "text", isUnique: true }],
+      records: [
+        { id: "a", key: "same" },
+        { id: "b", key: "same" },
+      ],
+      rules: { unique: ["key"] },
+      now: NOW,
+    });
+    const finding = byCheck(findings, "unique-duplicate");
+    expect(finding?.count).toBe(1);
+    expect(finding?.examples.map((example) => example.id)).toEqual(["b"]);
+  });
+
   it("applies rules: requireFields, unique and stale", () => {
     const findings = runDoctorChecks({
       fields: [
